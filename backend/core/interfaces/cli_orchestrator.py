@@ -123,7 +123,8 @@ def run_investment_workflow():
         # In a real scenario, you'd fetch detailed financial data for each ticker here
         # For demonstration, we'll just pass the tickers to the AI prompt
         # and assume the AI has access to the necessary data or we'd pass it in a more complex structure.
-        fast_grower_info_for_ai = [{"ticker": t} for t in fast_growers] # Placeholder
+        fast_grower_info_for_ai = [{"ticker": t, "data": yfinance_repo.get_all_data(t) } for t in fast_growers] # Placeholder
+
         vet_fg_response = ai_service.vet_fast_growers(fast_grower_info_for_ai)
         vet_fg_content = vet_fg_response.get("content", "")
         print("AI Vetting (Fast Growers):\n", vet_fg_content)
