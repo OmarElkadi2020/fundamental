@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import StepItem from './Step';
-import { Stepper as MuiStepper, Step as MuiStep, StepLabel } from '@mui/material';
+import Step from './Step';
 import StockCard from './StockCard';
 import StockDetail from './StockDetail';
 import FinalSelectionModal from './FinalSelectionModal';
@@ -21,7 +20,6 @@ const stepsConfig = [
 const Dashboard = () => {
   const [steps, setSteps] = useState(stepsConfig.map(step => ({ ...step, status: 'pending', useCache: true, data: null })));
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [selectedStock, setSelectedStock] = useState(null);
   const [finalStocks, setFinalStocks] = useState([]);
   const [showFinalSelectionModal, setShowFinalSelectionModal] = useState(false);
@@ -106,7 +104,6 @@ const Dashboard = () => {
 
   const startAnalysis = async () => {
     setAnalysisInProgress(true);
-    setCurrentStepIndex(0);
     setFinalStocks([]);
     let currentSteps = [...steps];
 
@@ -118,7 +115,6 @@ const Dashboard = () => {
 
     for (let i = 0; i < currentSteps.length; i++) {
       const step = currentSteps[i];
-      setCurrentStepIndex(i);
       setSteps(prev => prev.map(s => s.id === step.id ? { ...s, status: 'running' } : s));
 
       try {
@@ -200,7 +196,7 @@ const Dashboard = () => {
                     parsedVettingResult = [];
                   } else {
                     parsedVettingResult = JSON.parse(jsonString);
-                  }                  
+                  }
                 } catch (e) {
                   console.error("Error parsing turnarounds vetting data from text:", e);
                   parsedVettingResult = [];
@@ -285,17 +281,14 @@ const Dashboard = () => {
 
         currentSteps[i] = { ...step, status: 'completed', data: result.data };
         setSteps([...currentSteps]);
-        setCurrentStepIndex(i + 1);
 
       } catch (error) {
         console.error(`Error in step ${step.id}:`, error);
         setSteps(prev => prev.map(s => s.id === step.id ? { ...s, status: 'failed' } : s));
-        setCurrentStepIndex(i);
         break;
       }
     }
     setAnalysisInProgress(false);
-    setCurrentStepIndex(currentSteps.length);
   };
 
   const handleStockClick = async (stock) => {
@@ -321,7 +314,8 @@ const Dashboard = () => {
       let sentimentAnalysis = {};
       if (sentimentResponse.ok) {
         sentimentAnalysis = await sentimentResponse.json();
-      } else {
+      }
+      else {
         console.warn(`Sentiment analysis not found for ${stock.ticker}, status: ${sentimentResponse.status}`);
       }
 
@@ -485,3 +479,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
