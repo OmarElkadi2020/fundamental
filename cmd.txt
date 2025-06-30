@@ -1,5 +1,6 @@
 ps aux | grep -E 'npm|uvicorn'
 kill 133544 149823 150150
 
-pkill uvicorn
-pkill npm
+pkill -f uvicorn
+pkill -f npm
+pkill -f "npm run"

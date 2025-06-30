@@ -32,12 +32,12 @@ def write_cache(data):
     with open(CACHE_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-from stock_selection_framework.application.services import VettingService
+from stock_selection_framework.application.ai_evaluation_service import AIEvaluationService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up application...")
-    app.state.vetting_service = VettingService()
+    app.state.ai_service = AIEvaluationService()
     yield
     logger.info("Shutting down application...")
 
@@ -71,7 +71,7 @@ async def run_analysis_step(request: Request):
     step = body.get("step")
     use_cache = body.get("use_cache", True)
     payload = body.get("payload")
-    vetting_service = request.app.state.vetting_service
+    ai_service = request.app.state.ai_service
 
     cache = get_cache()
 
@@ -82,18 +82,41 @@ async def run_analysis_step(request: Request):
 
     try:
         logger.info(f"Running analysis step: {step} (Use Cache: {use_cache})")
+        result = None
         if step == "idea_generation":
-            result = vetting_service.ai_service.generate_stock_ideas(count=100)
-        elif step == "filtering":
-            if not payload or 'ideas' not in payload:
-                logger.error("Payload with ideas is required for filtering step.")
-                raise HTTPException(status_code=400, detail="Payload with ideas is required for filtering step.")
-            result = vetting_service.ai_service.filter_stock_ideas(stock_ideas=payload['ideas'], count=50)
-        # Add other steps here (categorization, vetting) as they are implemented
-        # elif step == "categorization":
-        #     result = ...
-        # elif step == "vetting":
-        #     result = ...
+            count = payload.get("count", 150)
+            result = ai_service.generate_ideas_scuttlebutt(count=count)
+        elif step == "categorization_triage":
+            companies_list = payload.get("companies_list")
+            if not companies_list:
+                raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+            result = ai_service.categorize_and_filter_lynch(companies_list=companies_list)
+        elif step == "vetting_fast_growers":
+            fast_growers_data = payload.get("fast_growers_data")
+            if not fast_growers_data:
+                raise HTTPException(status_code=400, detail="fast_growers_data is required for vetting_fast_growers step.")
+            result = ai_service.vet_fast_growers(fast_growers_data=fast_growers_data)
+        elif step == "vetting_turnarounds":
+            turnarounds_data = payload.get("turnarounds_data")
+            if not turnarounds_data:
+                raise HTTPException(status_code=400, detail="turnarounds_data is required for vetting_turnarounds step.")
+            result = ai_service.vet_turnarounds(turnarounds_data=turnarounds_data)
+        elif step == "sentiment_analysis":
+            stocks_list = payload.get("stocks_list")
+            if not stocks_list:
+                raise HTTPException(status_code=400, detail="stocks_list is required for sentiment_analysis step.")
+            result = ai_service.analyze_sentiment(stocks_list=stocks_list)
+        elif step == "final_selection_synthesis":
+            fast_growers_vetted = payload.get("fast_growers_vetted")
+            turnarounds_vetted = payload.get("turnarounds_vetted")
+            sentiment_analysis_results = payload.get("sentiment_analysis_results")
+            if not fast_growers_vetted or not turnarounds_vetted or not sentiment_analysis_results:
+                raise HTTPException(status_code=400, detail="All vetting and sentiment results are required for final_selection_synthesis step.")
+            result = ai_service.final_selection_synthesis(
+                fast_growers_vetted=fast_growers_vetted,
+                turnarounds_vetted=turnarounds_vetted,
+                sentiment_analysis_results=sentiment_analysis_results
+            )
         else:
             logger.warning(f"Unknown analysis step requested: {step}")
             raise HTTPException(status_code=400, detail=f"Unknown step: {step}")
@@ -122,14 +145,15 @@ async def get_cached_step(step_name: str):
 async def get_full_cache():
     return JSONResponse(content=get_cache())
 
-@app.get("/api/vet_stock/{ticker}")
-async def vet_stock(ticker: str, request: Request):
-    vetting_service = request.app.state.vetting_service
-    try:
-        logger.info(f"Vetting stock: {ticker}")
-        result = vetting_service.vet_candidate(ticker)
-        logger.info(f"Successfully vetted stock: {ticker}")
-        return JSONResponse(content=result)
-    except Exception as e:
-        logger.error(f"An error occurred during stock vetting for {ticker}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+# Remove the old /api/vet_stock/{ticker} endpoint as it's no longer part of the new workflow
+# @app.get("/api/vet_stock/{ticker}")
+# async def vet_stock(ticker: str, request: Request):
+#     vetting_service = request.app.state.vetting_service
+#     try:
+#         logger.info(f"Vetting stock: {ticker}")
+#         result = vetting_service.vet_candidate(ticker)
+#         logger.info(f"Successfully vetted stock: {ticker}")
+#         return JSONResponse(content=result)
+#     except Exception as e:
+#         logger.error(f"An error occurred during stock vetting for {ticker}: {e}", exc_info=True)
+#         raise HTTPException(status_code=500, detail=str(e))
