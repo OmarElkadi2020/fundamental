@@ -30,24 +30,55 @@ def _parse_ai_generated_ideas(ai_response_content: str) -> list[str]:
         print(f"An unexpected error occurred during AI response parsing: {e}")
         return []
 
-def _parse_categorization_table(markdown_content: str) -> dict:
+def _parse_categorization_table(ai_response_content: str) -> dict:
     """
-    Parses the categorization markdown table and returns a dictionary
-    mapping categories to lists of tickers.
+    Parses the AI-generated categorization content to extract fast growers and turnarounds.
+    Assumes the AI response contains a JSON object within a markdown code block.
     """
     categorized_stocks = {"Fast Grower": [], "Turnaround": []}
-    lines = markdown_content.strip().split('\n')
-    
-    current_category = None
-    for line in lines:
-        line = line.strip()
-        if line.startswith("###"): # Category header
-            current_category = line.replace("###", "").strip()
-        elif line.startswith("- "): # Ticker line
-            match = re.match(r"- \*\*([A-Z]+)\*\*:.*", line)
-            if match and current_category in categorized_stocks:
-                categorized_stocks[current_category].append(match.group(1))
-    return categorized_stocks
+    try:
+        json_match = re.search(r'```json\n([\s\S]*?)\n```', ai_response_content)
+        if not json_match:
+            print("Error: No JSON code block found in AI categorization response.")
+            return categorized_stocks
+
+        json_content = json_match.group(1)
+        data = json.loads(json_content)
+
+        if "fast_growers" in data:
+            categorized_stocks["Fast Grower"] = [item["ticker"] for item in data["fast_growers"] if "ticker" in item]
+        if "turnarounds" in data:
+            categorized_stocks["Turnaround"] = [item["ticker"] for item in data["turnarounds"] if "ticker" in item]
+
+        return categorized_stocks
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON from AI categorization response: {e}")
+        return categorized_stocks
+    except Exception as e:
+        print(f"An unexpected error occurred during AI categorization parsing: {e}")
+        return categorized_stocks
+
+def _parse_vetting_results(ai_response_content: str) -> list[dict]:
+    """
+    Parses the AI-generated vetting content to extract detailed vetting results.
+    Assumes the AI response contains a JSON array within a markdown code block.
+    """
+    try:
+        json_match = re.search(r'```json\n([\s\S]*?)\n```', ai_response_content)
+        if not json_match:
+            print("Error: No JSON code block found in AI vetting response.")
+            return []
+
+        json_content = json_match.group(1)
+        results = json.loads(json_content)
+        return results
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON from AI vetting response: {e}")
+        return []
+    except Exception as e:
+        print(f"An unexpected error occurred during AI vetting parsing: {e}")
+        return []
+
 
 def run_investment_workflow():
     ai_service = AIEvaluationService()
@@ -94,19 +125,18 @@ def run_investment_workflow():
         # and assume the AI has access to the necessary data or we'd pass it in a more complex structure.
         fast_grower_info_for_ai = [{"ticker": t} for t in fast_growers] # Placeholder
         vet_fg_response = ai_service.vet_fast_growers(fast_grower_info_for_ai)
-        print("AI Vetting (Fast Growers):\n", vet_fg_response.get("content", ""))
-        # Parse and store vetted fast growers. For now, just keep the tickers.
-        vetted_fast_growers_data = fast_grower_info_for_ai # This needs proper parsing later
+        vet_fg_content = vet_fg_response.get("content", "")
+        print("AI Vetting (Fast Growers):\n", vet_fg_content)
+        vetted_fast_growers_data = _parse_vetting_results(vet_fg_content)
 
     vetted_turnarounds_data = []
     if turnarounds:
         print("\n  Vetting Turnarounds...")
-        # Similar to Fast Growers, fetch data and pass to AI
-        turnaround_info_for_ai = [{"ticker": t} for t in turnarounds] # Placeholder
+        turnaround_info_for_ai = [{"ticker": t} for t in turnarounds]
         vet_tr_response = ai_service.vet_turnarounds(turnaround_info_for_ai)
-        print("AI Vetting (Turnarounds):\n", vet_tr_response.get("content", ""))
-        # Parse and store vetted turnarounds. For now, just keep the tickers.
-        vetted_turnarounds_data = turnaround_info_for_ai # This needs proper parsing later
+        vet_tr_content = vet_tr_response.get("content", "")
+        print("AI Vetting (Turnarounds):\n", vet_tr_content)
+        vetted_turnarounds_data = _parse_vetting_results(vet_tr_content)
 
     all_vetted_tickers = [d["ticker"] for d in vetted_fast_growers_data + vetted_turnarounds_data]
     if not all_vetted_tickers:
@@ -118,14 +148,13 @@ def run_investment_workflow():
     sentiment_response = ai_service.analyze_sentiment(all_vetted_tickers)
     sentiment_markdown = sentiment_response.get("content", "")
     print("AI Sentiment Analysis Results:\n", sentiment_markdown)
-    # Parse sentiment results if needed for Step 5, for now just pass the raw markdown
 
     # Step 5: Final Selection & Synthesis
     print("\nStep 5: Performing Final Selection & Synthesis...")
     final_selection_response = ai_service.final_selection_synthesis(
-        vetted_fast_growers_data, # This should be parsed data, not just tickers
-        vetted_turnarounds_data,  # This should be parsed data, not just tickers
-        {"sentiment_markdown": sentiment_markdown} # Pass sentiment results
+        vetted_fast_growers_data,
+        vetted_turnarounds_data,
+        {"content": sentiment_markdown} # Pass the full sentiment response content
     )
     final_selection_markdown = final_selection_response.get("content", "")
     print("AI Final Selection:\n", final_selection_markdown)
