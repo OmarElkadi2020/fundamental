@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import Step from './Step';
+import React, { useState } from 'react';
+import StepItem from './Step';
+import { Stepper as MuiStepper, Step as MuiStep, StepLabel } from '@mui/material';
 import StockCard from './StockCard';
 import StockDetail from './StockDetail';
 import FinalSelectionModal from './FinalSelectionModal';
@@ -20,6 +21,7 @@ const stepsConfig = [
 const Dashboard = () => {
   const [steps, setSteps] = useState(stepsConfig.map(step => ({ ...step, status: 'pending', useCache: true, data: null })));
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [selectedStock, setSelectedStock] = useState(null);
   const [finalStocks, setFinalStocks] = useState([]);
   const [showFinalSelectionModal, setShowFinalSelectionModal] = useState(false);
@@ -104,6 +106,7 @@ const Dashboard = () => {
 
   const startAnalysis = async () => {
     setAnalysisInProgress(true);
+    setCurrentStepIndex(0);
     setFinalStocks([]);
     let currentSteps = [...steps];
 
@@ -115,6 +118,7 @@ const Dashboard = () => {
 
     for (let i = 0; i < currentSteps.length; i++) {
       const step = currentSteps[i];
+      setCurrentStepIndex(i);
       setSteps(prev => prev.map(s => s.id === step.id ? { ...s, status: 'running' } : s));
 
       try {
@@ -281,14 +285,17 @@ const Dashboard = () => {
 
         currentSteps[i] = { ...step, status: 'completed', data: result.data };
         setSteps([...currentSteps]);
+        setCurrentStepIndex(i + 1);
 
       } catch (error) {
         console.error(`Error in step ${step.id}:`, error);
         setSteps(prev => prev.map(s => s.id === step.id ? { ...s, status: 'failed' } : s));
+        setCurrentStepIndex(i);
         break;
       }
     }
     setAnalysisInProgress(false);
+    setCurrentStepIndex(currentSteps.length);
   };
 
   const handleStockClick = async (stock) => {
@@ -427,9 +434,18 @@ const Dashboard = () => {
           {analysisInProgress ? 'Analysis in Progress...' : 'Start Full Analysis'}
         </button>
       </header>
+      <div className="progress-container">
+        <MuiStepper activeStep={currentStepIndex} alternativeLabel>
+          {steps.map((step) => (
+            <MuiStep key={step.id} completed={step.status === 'completed'}>
+              <StepLabel error={step.status === 'failed'}>{step.name}</StepLabel>
+            </MuiStep>
+          ))}
+        </MuiStepper>
+      </div>
       <div className="workflow-steps">
         {steps.map(step => (
-          <Step
+          <StepItem
             key={step.id}
             step={step}
             onToggleCache={handleToggleCache}
