@@ -1,5 +1,5 @@
 import React from 'react';
-import './StockDetail.css';
+import { Box, Button, Typography, Card, CardContent } from '@mui/material';
 
 const StockDetail = ({ stock, onBack }) => {
   if (!stock) {
@@ -15,55 +15,59 @@ const StockDetail = ({ stock, onBack }) => {
   };
 
   return (
-    <div className="stock-detail">
-      <button onClick={onBack} className="back-button">← Back to List</button>
-      <div className="detail-header">
-        <h2>{stock.info.symbol} - {stock.info.longName}</h2>
-        <p>{stock.info.sector} | {stock.info.industry}</p>
-      </div>
-      <div className="detail-metrics">
-        <h3>Categorization</h3>
-        <p><strong>Lynch Category (Rule-Based):</strong> {stock.category ?? 'N/A'}</p>
+    <Card className="stock-detail" sx={{ m: 'auto', maxWidth: 800 }}>
+      <CardContent>
+        <Button onClick={onBack} sx={{ mb: 2 }}>&larr; Back to List</Button>
+        <Box className="detail-header" sx={{ mb: 2 }}>
+          <Typography variant="h5">{stock.info.symbol} - {stock.info.longName}</Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            {stock.info.sector} | {stock.info.industry}
+          </Typography>
+        </Box>
+        <Box className="detail-metrics">
+          <Typography variant="h6">Categorization</Typography>
+          <Typography><strong>Lynch Category (Rule-Based):</strong> {stock.category ?? 'N/A'}</Typography>
 
-        <h3>AI Evaluations</h3>
-        <div className="ai-evaluations">
-          <h4>Investment Thesis</h4>
-          <p>{stock.investment_thesis ?? 'N/A'}</p>
-          <h4>Sentiment Analysis</h4>
-          <p>
-            <strong>Score:</strong> 
-            {stock.sentiment_analysis && stock.sentiment_analysis.score !== null ? 
-              <span className={getSentimentColor(stock.sentiment_analysis.score)}>{stock.sentiment_analysis.score.toFixed(2)}</span> 
-              : 'N/A'}
-          </p>
-          <p><strong>Summary:</strong> {stock.sentiment_analysis?.summary ?? 'N/A'}</p>
-        </div>
+          <Typography variant="h6" sx={{ mt: 2 }}>AI Evaluations</Typography>
+          <Box className="ai-evaluations" sx={{ mb: 2 }}>
+            <Typography variant="subtitle1">Investment Thesis</Typography>
+            <Typography>{stock.investment_thesis ?? 'N/A'}</Typography>
+            <Typography variant="subtitle1" sx={{ mt: 1 }}>Sentiment Analysis</Typography>
+            <Typography>
+              <strong>Score:</strong>
+              {stock.sentiment_analysis && stock.sentiment_analysis.score !== null ?
+                <span className={getSentimentColor(stock.sentiment_analysis.score)}>{stock.sentiment_analysis.score.toFixed(2)}</span>
+                : 'N/A'}
+            </Typography>
+            <Typography><strong>Summary:</strong> {stock.sentiment_analysis?.summary ?? 'N/A'}</Typography>
+          </Box>
 
-        <h3>Vetting & CAN SLIM Analysis</h3>
-        <div className="can-slim-analysis">
-          {stock.vetting_results && Object.entries(stock.vetting_results).map(([key, value]) => (
-            <p key={key}>
-              <strong>{key}:</strong> {typeof value === 'object' && value !== null ? 
-                (value.pass !== undefined ? (value.pass ? 'Pass' : 'Fail') : value.score !== undefined ? value.score : JSON.stringify(value))
-                : value}
-            </p>
-          ))}
-        </div>
+          <Typography variant="h6" sx={{ mt: 2 }}>Vetting &amp; CAN SLIM Analysis</Typography>
+          <Box className="can-slim-analysis" sx={{ mb: 2 }}>
+            {stock.vetting_results && Object.entries(stock.vetting_results).map(([key, value]) => (
+              <Typography key={key}>
+                <strong>{key}:</strong> {typeof value === 'object' && value !== null ?
+                  (value.pass !== undefined ? (value.pass ? 'Pass' : 'Fail') : value.score !== undefined ? value.score : JSON.stringify(value))
+                  : value}
+              </Typography>
+            ))}
+          </Box>
 
-        <h3>Company Overview</h3>
-        <p>{stock.info?.longBusinessSummary ?? 'N/A'}</p>
+          <Typography variant="h6" sx={{ mt: 2 }}>Company Overview</Typography>
+          <Typography>{stock.info?.longBusinessSummary ?? 'N/A'}</Typography>
 
-        <h3>Financials</h3>
-        <p><strong>Market Cap:</strong> {stock.info?.marketCap ? stock.info.marketCap.toLocaleString() : 'N/A'}</p>
-        <p><strong>Trailing P/E:</strong> {stock.info?.trailingPE !== null ? stock.info.trailingPE.toFixed(2) : 'N/A'}</p>
-        <p><strong>Forward P/E:</strong> {stock.info?.forwardPE !== null ? stock.info.forwardPE.toFixed(2) : 'N/A'}</p>
-        <p><strong>Dividend Yield:</strong> {stock.info?.dividendYield !== null ? (stock.info.dividendYield * 100).toFixed(2) + '%' : 'N/A'}</p>
-        <p><strong>Beta:</strong> {stock.info?.beta !== null ? stock.info.beta.toFixed(2) : 'N/A'}</p>
-        <p><strong>52 Week High:</strong> {stock.info?.fiftyTwoWeekHigh !== null ? stock.info.fiftyTwoWeekHigh.toLocaleString() : 'N/A'}</p>
-        <p><strong>52 Week Low:</strong> {stock.info?.fiftyTwoWeekLow !== null ? stock.info.fiftyTwoWeekLow.toLocaleString() : 'N/A'}</p>
-      </div>
-    </div>
+          <Typography variant="h6" sx={{ mt: 2 }}>Financials</Typography>
+          <Typography><strong>Market Cap:</strong> {stock.info?.marketCap ? stock.info.marketCap.toLocaleString() : 'N/A'}</Typography>
+          <Typography><strong>Trailing P/E:</strong> {stock.info?.trailingPE !== null ? stock.info.trailingPE.toFixed(2) : 'N/A'}</Typography>
+          <Typography><strong>Forward P/E:</strong> {stock.info?.forwardPE !== null ? stock.info.forwardPE.toFixed(2) : 'N/A'}</Typography>
+          <Typography><strong>Dividend Yield:</strong> {stock.info?.dividendYield !== null ? (stock.info.dividendYield * 100).toFixed(2) + '%' : 'N/A'}</Typography>
+          <Typography><strong>Beta:</strong> {stock.info?.beta !== null ? stock.info.beta.toFixed(2) : 'N/A'}</Typography>
+          <Typography><strong>52 Week High:</strong> {stock.info?.fiftyTwoWeekHigh !== null ? stock.info.fiftyTwoWeekHigh.toLocaleString() : 'N/A'}</Typography>
+          <Typography><strong>52 Week Low:</strong> {stock.info?.fiftyTwoWeekLow !== null ? stock.info.fiftyTwoWeekLow.toLocaleString() : 'N/A'}</Typography>
+        </Box>
+      </CardContent>
+    </Card>
   );
-}; 
+};
 
 export default StockDetail;
