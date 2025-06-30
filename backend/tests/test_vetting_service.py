@@ -1,21 +1,16 @@
 import unittest
 from unittest.mock import MagicMock, patch
-import os
-import sys
 from io import StringIO
 import pandas as pd
 
-# Add the src directory to the Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from stock_selection_framework.application.services import VettingService
-from stock_selection_framework.domain.models import Company, InvestmentCandidate
+from backend.core.use_cases.vetting_service import VettingService
+from backend.core.entities.models import Company, InvestmentCandidate
 
 class TestVettingService(unittest.TestCase):
 
-    @patch('stock_selection_framework.infrastructure.yfinance_repository.YahooFinanceRepository')
-    @patch('stock_selection_framework.infrastructure.economic_data_repository.EconomicDataRepository')
-    @patch('stock_selection_framework.application.categorization_service.CategorizationService')
+    @patch('backend.core.infrastructure.yfinance_repository.YahooFinanceRepository')
+    @patch('backend.core.infrastructure.economic_data_repository.EconomicDataRepository')
+    @patch('backend.core.use_cases.categorization_service.CategorizationService')
     def test_vet_candidate_attractive(self, MockCategorizationService, MockEconomicDataRepository, MockYahooFinanceRepository):
         # Arrange
         mock_repo_instance = MockYahooFinanceRepository.return_value
@@ -57,9 +52,9 @@ class TestVettingService(unittest.TestCase):
         self.assertTrue(results["lynch_criteria"]["Insider Buying"]["pass"])
         self.assertTrue(results["canslim_criteria"]["Quarterly EPS Growth"]["pass"])
 
-    @patch('stock_selection_framework.infrastructure.yfinance_repository.YahooFinanceRepository')
-    @patch('stock_selection_framework.infrastructure.economic_data_repository.EconomicDataRepository')
-    @patch('stock_selection_framework.application.categorization_service.CategorizationService')
+    @patch('backend.core.infrastructure.yfinance_repository.YahooFinanceRepository')
+    @patch('backend.core.infrastructure.economic_data_repository.EconomicDataRepository')
+    @patch('backend.core.use_cases.categorization_service.CategorizationService')
     def test_vet_candidate_unattractive(self, MockCategorizationService, MockEconomicDataRepository, MockYahooFinanceRepository):
         # Arrange
         mock_repo_instance = MockYahooFinanceRepository.return_value
@@ -101,9 +96,9 @@ class TestVettingService(unittest.TestCase):
         self.assertFalse(results["lynch_criteria"]["Insider Buying"]["pass"])
         self.assertFalse(results["canslim_criteria"]["Quarterly EPS Growth"]["pass"])
 
-    @patch('stock_selection_framework.infrastructure.yfinance_repository.YahooFinanceRepository')
-    @patch('stock_selection_framework.infrastructure.economic_data_repository.EconomicDataRepository')
-    @patch('stock_selection_framework.application.categorization_service.CategorizationService')
+    @patch('backend.core.infrastructure.yfinance_repository.YahooFinanceRepository')
+    @patch('backend.core.infrastructure.economic_data_repository.EconomicDataRepository')
+    @patch('backend.core.use_cases.categorization_service.CategorizationService')
     def test_vet_canslim_criteria_edge_cases(self, MockCategorizationService, MockEconomicDataRepository, MockYahooFinanceRepository):
         # Arrange
         mock_yfinance_repo_instance = MockYahooFinanceRepository.return_value
