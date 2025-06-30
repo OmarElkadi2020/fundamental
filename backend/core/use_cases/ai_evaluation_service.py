@@ -1,5 +1,6 @@
 import os
 import google.generativeai as genai
+import json
 
 class AIEvaluationService:
     def __init__(self):
@@ -23,21 +24,35 @@ class AIEvaluationService:
         self._initialize_model()
         try:
             response = self.model.generate_content(prompt)
-            return {"content": response.text, "model_name": self.model_name}
+            response_text = response.text
+            print(f"Gemini API raw response.text: {response_text}") # For debugging
+
+            try:
+                # Attempt to parse as JSON
+                json_content = json.loads(response_text)
+                # Basic validation for idea_generation structure
+                if isinstance(json_content, list) and all(isinstance(item, dict) and "ticker" in item and "reason" in item for item in json_content):
+                    return {"content": json_content, "model_name": self.model_name, "format": "json"}
+                else:
+                    print("Warning: AI response is JSON but does not match expected structure. Returning raw text.")
+                    return {"content": response_text, "model_name": self.model_name, "format": "text"}
+            except json.JSONDecodeError:
+                print("Warning: AI response is not valid JSON. Returning raw text.")
+                return {"content": response_text, "model_name": self.model_name, "format": "text"}
         except Exception as e:
             print(f"Error calling Gemini API: {e}")
-            return {"content": f"AI evaluation failed: {e}", "model_name": self.model_name}
+            return {"content": f"AI evaluation failed: {e}", "model_name": self.model_name, "format": "error"}
 
     def generate_ideas_scuttlebutt(self, count: int = 150) -> dict:
         prompt = f"""
         As an expert stock analyst specializing in the 'Scuttlebutt' methodology of Philip Fisher and Peter Lynch, generate a list of {count} public companies that are showing strong qualitative signals of success or significant operational change. For each company, provide a 1-2 sentence justification based on factors like positive customer reviews, high employee morale, new product buzz, industry disruption, or signs of a potential corporate turnaround. The list should be diverse but include companies that could potentially be classified as 'Fast Growers' or 'Turnarounds'.
 
-        Present your findings as a markdown table with two columns: 'Stock Ticker' and 'Reasons for Selection'.
+        Present your findings as a JSON array of objects. Each object should have two keys: "ticker" (string, for the stock ticker) and "reason" (string, for the 1-2 sentence justification).
         Example format:
-        | Stock Ticker | Reasons for Selection |
-        |--------------|-----------------------|
-        | AAPL         | - Strong customer loyalty for new iPhone.\n- Positive employee reviews on Glassdoor. |
-        | MSFT         | - Enterprise clients praising cloud solutions.\n- Growing developer community. |
+        [
+            {{"ticker": "AAPL", "reason": "Strong customer loyalty for new iPhone. Positive employee reviews on Glassdoor."}},
+            {{"ticker": "MSFT", "reason": "Enterprise clients praising cloud solutions. Growing developer community."}}
+        ]
         """
         return self._generate_content(prompt)
 
@@ -46,14 +61,19 @@ class AIEvaluationService:
         prompt = f"""
         You are an AI analyst trained in Peter Lynch's stock categorization methods. Given the following list of {len(companies_list)} companies, analyze each one and classify it into one of the six Lynch categories: Slow Grower, Stalwart, Fast Grower, Cyclical, Turnaround, or Asset Play. Provide a brief justification for your classification. After categorizing all of them, return a filtered list containing *only* the companies classified as **Fast Grower** or **Turnaround**.
 
-        Present the filtered list in the following markdown format:
-        ### Fast Grower
-        - **[TICKER]**: [Brief justification]
-        - **[TICKER]**: [Brief justification]
+        Present the filtered list as a JSON object with two keys: "fast_growers" and "turnarounds". Each key should contain a JSON array of objects. Each object in these arrays should have two keys: "ticker" (string) and "justification" (string).
 
-        ### Turnaround
-        - **[TICKER]**: [Brief justification]
-        - **[TICKER]**: [Brief justification]
+        Example format:
+        {{
+          "fast_growers": [
+            {{"ticker": "NVDA", "justification": "Leader in AI chips."}},
+            {{"ticker": "SMCI", "justification": "Rapidly expanding server infrastructure."}}
+          ],
+          "turnarounds": [
+            {{"ticker": "CCL", "justification": "Recovering from pandemic impact."}},
+            {{"ticker": "BA", "justification": "Addressing operational issues."}}
+          ]
+        }}
 
         Companies list:
         {companies_str}
@@ -66,14 +86,23 @@ class AIEvaluationService:
         tickers = [data['ticker'] for data in fast_growers_data]
         tickers_str = ", ".join(tickers)
         prompt = f"""
-        For the following list of stocks categorized as **Fast Growers**, perform a rigorous CAN SLIM and Lynchian analysis. For each stock, provide a score (1-10) or a pass/fail rating for each of the following criteria:
-        *   **C - Current Quarterly EPS Growth:** Must be > 25%.
-        *   **A - Annual EPS Growth:** Must be > 25% for the last 3 years.
-        *   **N - New Highs:** Is the stock near its 52-week high?
-        *   **L - Leader:** Is it a leader in its industry with a Relative Strength (RS) Rating > 80?
-        *   **I - Institutional Sponsorship:** Is there increasing institutional ownership?
-        *   **PEG Ratio (Lynch):** Is the PEG ratio <= 1.5?
-        *   **Balance Sheet (Lynch):** Does the company have a strong balance sheet with low debt?
+        Present the results as a JSON array of objects. Each object should represent a stock and include its 'ticker' and a 'vetting_results' object containing the scores/pass-fail ratings for each criterion.
+
+        Example format:
+        [
+          {{
+            "ticker": "AAPL",
+            "vetting_results": {{
+              "Current Quarterly EPS Growth": {{"score": 8, "pass": true}},
+              "Annual EPS Growth": {{"score": 7, "pass": true}},
+              "New Highs": {{"score": 9, "pass": true}},
+              "Leader": {{"score": 8, "pass": true}},
+              "Institutional Sponsorship": {{"score": 7, "pass": true}},
+              "PEG Ratio": {{"score": 9, "pass": true}},
+              "Balance Sheet": {{"score": 8, "pass": true}}
+            }}
+          }}
+        ]
 
         Stocks: {tickers_str}
         """
@@ -85,12 +114,21 @@ class AIEvaluationService:
         tickers = [data['ticker'] for data in turnarounds_data]
         tickers_str = ", ".join(tickers)
         prompt = f"""
-        For the following list of stocks categorized as **Turnarounds**, perform a specialized vetting process. For each stock, analyze and report on the following key turnaround factors:
-        *   **The Nature of the Turnaround:** What is the story? (e.g., new management, restructuring, successful new product, emerging from bankruptcy).
-        *   **Balance Sheet Strength:** How much cash do they have versus debt? Can they survive a prolonged downturn? This is the most critical factor for a turnaround.
-        *   **Insider Buying:** Are insiders buying shares, signaling confidence?
-        *   **Early Signs of Success:** Is the plan working? Are sales starting to recover? Are profit margins improving?
-        *   **O'Neil's 'N' (New):** Is there a 'New' element (management, product, etc.) that aligns with the turnaround story?
+        Present the results as a JSON array of objects. Each object should represent a stock and include its 'ticker' and a 'vetting_results' object containing the analysis for each factor.
+
+        Example format:
+        [
+          {{
+            "ticker": "CCL",
+            "vetting_results": {{
+              "Nature of the Turnaround": "Recovering from pandemic, managing debt.",
+              "Balance Sheet Strength": "Improving cash flow, still high debt.",
+              "Insider Buying": "Some insider buying observed.",
+              "Early Signs of Success": "Increased bookings, positive sentiment.",
+              "O'Neil's 'N' (New)": "New itineraries and marketing strategies."
+            }}
+          }}
+        ]
 
         Stocks: {tickers_str}
         """
@@ -99,7 +137,13 @@ class AIEvaluationService:
     def analyze_sentiment(self, stocks_list: list[str]) -> dict:
         stocks_str = ", ".join(stocks_list)
         prompt = f"""
-        For the following list of vetted stocks, conduct a sentiment analysis of recent news articles, press releases, and social media conversations (from sources like X.com, Reddit, and stock forums) over the last 30-60 days. For each stock, provide a sentiment score (e.g., -1.0 to 1.0, where > 0.5 is highly positive) and a brief summary of the key positive narratives or catalysts being discussed. Identify the top 5-10 stocks with the most positive and compelling sentiment.
+        Present the results as a JSON array of objects. Each object should have a 'ticker' (string), 'sentiment_score' (float, e.g., -1.0 to 1.0), and 'summary' (string, brief summary of narratives).
+
+        Example format:
+        [
+          {"ticker": "AAPL", "sentiment_score": 0.75, "summary": "Positive buzz around new product launches and strong sales."},
+          {"ticker": "MSFT", "sentiment_score": 0.6, "summary": "Enterprise clients praising cloud solutions and AI integration."}
+        ]
 
         Stocks: {stocks_str}
         """
@@ -120,6 +164,26 @@ class AIEvaluationService:
         3.  **Category (Fast Grower or Turnaround)**
         4.  **A concise (3-5 sentence) investment thesis** explaining *why* it is a top pick, integrating the qualitative story, the quantitative data, the sentiment analysis, and the specific category criteria.
 
-        The final output should be a markdown table of these 10 stocks.
+        The final output should be a JSON array of objects, each representing one of the 10 selected stocks. Each object should have the following keys:
+        - "ticker" (string)
+        - "company_name" (string)
+        - "category" (string, either "Fast Grower" or "Turnaround")
+        - "investment_thesis" (string, 3-5 sentences)
+
+        Example format:
+        [
+          {
+            "ticker": "NVDA",
+            "company_name": "NVIDIA Corporation",
+            "category": "Fast Grower",
+            "investment_thesis": "NVIDIA continues to dominate the AI chip market..."
+          },
+          {
+            "ticker": "SMCI",
+            "company_name": "Super Micro Computer, Inc.",
+            "category": "Fast Grower",
+            "investment_thesis": "SMCI is a key beneficiary of the AI infrastructure buildout..."
+          }
+        ]
         """
         return self._generate_content(prompt)

@@ -28,31 +28,7 @@ const Dashboard = () => {
     );
   };
 
-  const _parseMarkdownTable = (markdown_content, column_name) => {
-    const extracted_values = [];
-    const lines = markdown_content.trim().split('\n');
-    if (lines.length < 2) return [];
-
-    const header_line = lines[0];
-    const headers = header_line.split('|').map(h => h.trim()).filter(h => h);
-    const col_index = headers.indexOf(column_name);
-
-    if (col_index === -1) {
-        console.warn(`Column '${column_name}' not found in markdown table header:`, headers);
-        return [];
-    }
-
-    for (const line of lines.slice(2)) { // Skip header and separator line
-        const parts = line.split('|').map(p => p.trim()).filter(p => p);
-        if (parts.length > col_index) {
-            const value = parts[col_index].replace(/\*/g, '').trim();
-            if (value) {
-                extracted_values.push(value);
-            }
-        }
-    }
-    return extracted_values;
-  };
+  
 
   const _parseCategorizationTable = (markdown_content) => {
     const categorized_stocks = { "Fast Grower": [], "Turnaround": [] };
@@ -124,12 +100,13 @@ const Dashboard = () => {
               body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { count: 150 } }),
             });
             result = await response.json();
-            ideaGenerationData = result.data.content; // Assuming content is the markdown table
+            ideaGenerationData = result.data.content; // Now it's a JSON array
             break;
 
           case 'categorization_triage':
             if (!ideaGenerationData) throw new Error('Idea generation data not available.');
-            const initialTickers = _parseMarkdownTable(ideaGenerationData, 'Stock Ticker');
+            // ideaGenerationData is now a JSON array of objects, extract tickers
+            const initialTickers = ideaGenerationData.map(item => item.ticker);
             response = await fetch('/api/run_analysis_step', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

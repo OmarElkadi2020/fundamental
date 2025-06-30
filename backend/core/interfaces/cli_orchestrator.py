@@ -1,37 +1,34 @@
 import pandas as pd
 from io import StringIO
 import re
-from src.core.use_cases.ai_evaluation_service import AIEvaluationService
-from src.core.infrastructure.yfinance_repository import YFinanceRepository
-from src.stock_selection_framework.application.categorization_service import CategorizationService
+import json
+from backend.core.use_cases.ai_evaluation_service import AIEvaluationService
+from backend.core.infrastructure.yfinance_repository import YahooFinanceRepository
+from backend.core.use_cases.categorization_service import CategorizationService
 
-def _parse_markdown_table(markdown_content: str, column_name: str) -> list[str]:
+def _parse_ai_generated_ideas(ai_response_content: str) -> list[str]:
     """
-    Parses a markdown table and extracts values from a specified column.
-    Assumes the first row is the header and the second row is the separator.
+    Parses the AI-generated content to extract stock tickers.
+    Assumes the AI response contains a JSON array within a markdown code block.
     """
-    lines = markdown_content.strip().split('\n')
-    if len(lines) < 2:
-        return []
-
-    # Find header and column index
-    header_line = lines[0]
-    headers = [h.strip() for h in header_line.split('|') if h.strip()]
     try:
-        col_index = headers.index(column_name)
-    except ValueError:
-        print(f"Column '{column_name}' not found in markdown table header: {headers}")
-        return []
+        # Extract JSON string from markdown code block
+        json_match = re.search(r'```json\n([\s\S]*?)\n```', ai_response_content)
+        if not json_match:
+            print("Error: No JSON code block found in AI response.")
+            return []
 
-    extracted_values = []
-    # Iterate through data rows, skipping header and separator
-    for line in lines[2:]:
-        parts = [p.strip() for p in line.split('|') if p.strip()]
-        if len(parts) > col_index:
-            value = parts[col_index].replace('*', '').strip()
-            if value:
-                extracted_values.append(value)
-    return extracted_values
+        json_content = json_match.group(1)
+        ideas = json.loads(json_content)
+
+        tickers = [item["ticker"] for item in ideas if "ticker" in item]
+        return tickers
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON from AI response: {e}")
+        return []
+    except Exception as e:
+        print(f"An unexpected error occurred during AI response parsing: {e}")
+        return []
 
 def _parse_categorization_table(markdown_content: str) -> dict:
     """
@@ -54,7 +51,7 @@ def _parse_categorization_table(markdown_content: str) -> dict:
 
 def run_investment_workflow():
     ai_service = AIEvaluationService()
-    yfinance_repo = YFinanceRepository()
+    yfinance_repo = YahooFinanceRepository()
 
     print("--- Starting Refined Investment Workflow ---")
 
@@ -65,7 +62,7 @@ def run_investment_workflow():
     print("AI Generated Ideas:\n", generated_ideas_markdown)
     
     # Assuming the AI returns a markdown table with 'Stock Ticker' column
-    initial_stock_tickers = _parse_markdown_table(generated_ideas_markdown, "Stock Ticker")
+    initial_stock_tickers = _parse_ai_generated_ideas(generated_ideas_markdown)
     print(f"Successfully extracted {len(initial_stock_tickers)} initial stock tickers.")
     if not initial_stock_tickers:
         print("No initial stock tickers found. Exiting workflow.")

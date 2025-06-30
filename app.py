@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
-from src.logger import logger
+from backend.logger import logger
 
 # --- Caching --- #
 CACHE_FILE = "./data/cache/spa_analysis_cache.json"
@@ -32,7 +32,7 @@ def write_cache(data):
     with open(CACHE_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-from src.core.use_cases.ai_evaluation_service import AIEvaluationService
+from backend.core.use_cases.ai_evaluation_service import AIEvaluationService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

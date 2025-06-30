@@ -27,4 +27,83 @@ INFO:     127.0.0.1:0 - "POST /api/run_analysis_step HTTP/1.1" 200 OK
 Traceback (most recent call last):
   File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
     raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.2025-06-30 14:49:06,860 - stock_screener - INFO - Starting up application...
+2025-06-30 14:54:23,602 - stock_screener - INFO - Shutting down application...
+2025-06-30 14:54:25,005 - stock_screener - INFO - Starting up application...
+2025-06-30 14:54:30,747 - stock_screener - INFO - Running analysis step: idea_generation (Use Cache: True)
+2025-06-30 14:56:00,455 - stock_screener - INFO - Successfully completed analysis step: idea_generation
+2025-06-30 14:56:00,483 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 14:56:00,485 - stock_screener - ERROR - An error occurred during analysis step categorization_triage: 400: companies_list is required for categorization_triage step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
 fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.
+2025-06-30 14:57:45,672 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 14:57:45,674 - stock_screener - ERROR - An error occurred during analysis step categorization_triage: 400: companies_list is required for categorization_triage step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.
+2025-06-30 14:58:54,627 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 14:58:54,627 - stock_screener - ERROR - An error occurred during analysis step categorization_triage: 400: companies_list is required for categorization_triage step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.
+2025-06-30 14:58:56,703 - stock_screener - INFO - Shutting down application...
+2025-06-30 14:58:58,144 - stock_screener - INFO - Starting up application...
+2025-06-30 14:59:01,211 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 14:59:01,211 - stock_screener - ERROR - An error occurred during analysis step categorization_triage: 400: companies_list is required for categorization_triage step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.
+2025-06-30 15:00:01,057 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 15:00:01,058 - stock_screener - ERROR - An error occurred during analysis step categorization_triage: 400: companies_list is required for categorization_triage step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.
+2025-06-30 15:00:53,505 - stock_screener - INFO - Shutting down application...
+2025-06-30 15:00:56,022 - stock_screener - INFO - Starting up application...
+2025-06-30 15:01:04,205 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 15:01:04,206 - stock_screener - ERROR - An error occurred during analysis step categorization_triage: 400: companies_list is required for categorization_triage step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.
+2025-06-30 15:02:36,608 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 15:02:36,609 - stock_screener - ERROR - An error occurred during analysis step categorization_triage: 400: companies_list is required for categorization_triage step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.
+2025-06-30 15:02:51,960 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 15:02:51,962 - stock_screener - ERROR - An error occurred during analysis step categorization_triage: 400: companies_list is required for categorization_triage step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.
+2025-06-30 15:02:54,294 - stock_screener - INFO - Shutting down application...
+2025-06-30 15:02:56,470 - stock_screener - INFO - Starting up application...
+2025-06-30 15:02:58,067 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 15:02:58,068 - stock_screener - ERROR - An error occurred during analysis step categorization_triage: 400: companies_list is required for categorization_triage step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
+fastapi.exceptions.HTTPException: 400: companies_list is required for categorization_triage step.
+2025-06-30 15:08:34,129 - stock_screener - INFO - Shutting down application...
+2025-06-30 15:08:44,030 - stock_screener - INFO - Starting up application...
+2025-06-30 15:08:52,989 - stock_screener - INFO - Running analysis step: categorization_triage (Use Cache: True)
+2025-06-30 15:09:52,887 - stock_screener - INFO - Successfully completed analysis step: categorization_triage
+2025-06-30 15:19:55,565 - stock_screener - INFO - Shutting down application...
+2025-06-30 15:27:36,770 - stock_screener - INFO - Starting up application...
+2025-06-30 15:27:41,582 - stock_screener - INFO - Running analysis step: idea_generation (Use Cache: True)
+2025-06-30 15:27:41,583 - stock_screener - ERROR - An error occurred during analysis step idea_generation: Invalid format specifier
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 88, in run_analysis_step
+    result = ai_service.generate_ideas_scuttlebutt(count=count)
+  File "/home/omar/projects/fundamental/backend/core/use_cases/ai_evaluation_service.py", line 47, in generate_ideas_scuttlebutt
+    prompt = f"""
+ValueError: Invalid format specifier
+2025-06-30 15:30:53,683 - stock_screener - INFO - Shutting down application...
