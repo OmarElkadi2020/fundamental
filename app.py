@@ -16,7 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from src.logger import logger
 
 # --- Caching --- #
-CACHE_FILE = "./knowladgebase/cache/spa_analysis_cache.json"
+CACHE_FILE = "./data/cache/spa_analysis_cache.json"
 
 def get_cache():
     if not os.path.exists(CACHE_FILE):
@@ -32,7 +32,7 @@ def write_cache(data):
     with open(CACHE_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-from stock_selection_framework.application.ai_evaluation_service import AIEvaluationService
+from src.core.use_cases.ai_evaluation_service import AIEvaluationService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,10 +44,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static/frontend/build/static"), name="static")
+app.mount("/web", StaticFiles(directory="web/frontend/build"), name="web")
 
 # Configure Jinja2Templates
-templates = Jinja2Templates(directory="static/frontend/build")
+templates = Jinja2Templates(directory="web/frontend/build")
 
 # CORS Middleware
 app.add_middleware(
@@ -144,16 +144,3 @@ async def get_cached_step(step_name: str):
 @app.get("/api/get_full_cache")
 async def get_full_cache():
     return JSONResponse(content=get_cache())
-
-# Remove the old /api/vet_stock/{ticker} endpoint as it's no longer part of the new workflow
-# @app.get("/api/vet_stock/{ticker}")
-# async def vet_stock(ticker: str, request: Request):
-#     vetting_service = request.app.state.vetting_service
-#     try:
-#         logger.info(f"Vetting stock: {ticker}")
-#         result = vetting_service.vet_candidate(ticker)
-#         logger.info(f"Successfully vetted stock: {ticker}")
-#         return JSONResponse(content=result)
-#     except Exception as e:
-#         logger.error(f"An error occurred during stock vetting for {ticker}: {e}", exc_info=True)
-#         raise HTTPException(status_code=500, detail=str(e))

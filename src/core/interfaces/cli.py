@@ -8,7 +8,7 @@ load_dotenv()
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from stock_selection_framework.interfaces.cli_orchestrator import run_investment_workflow
+from core.interfaces.cli_orchestrator import run_investment_workflow
 
 def main():
     print("Starting the AI-driven stock selection workflow...")

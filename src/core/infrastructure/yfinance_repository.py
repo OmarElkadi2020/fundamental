@@ -1,5 +1,5 @@
 import yfinance as yf
-from ..domain.models import Company
+from ..entities.models import Company
 
 class YahooFinanceRepository:
     def get_ticker(self, ticker: str):

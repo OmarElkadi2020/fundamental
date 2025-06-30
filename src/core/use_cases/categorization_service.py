@@ -1,4 +1,4 @@
-from ..domain.models import InvestmentCandidate
+from ..entities.models import InvestmentCandidate
 
 class CategorizationService:
     def categorize(self, data: dict) -> str:

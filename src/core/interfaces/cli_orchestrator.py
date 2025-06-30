@@ -1,8 +1,8 @@
 import pandas as pd
 from io import StringIO
 import re
-from src.stock_selection_framework.application.ai_evaluation_service import AIEvaluationService
-from src.stock_selection_framework.infrastructure.yfinance_repository import YFinanceRepository
+from src.core.use_cases.ai_evaluation_service import AIEvaluationService
+from src.core.infrastructure.yfinance_repository import YFinanceRepository
 from src.stock_selection_framework.application.categorization_service import CategorizationService
 
 def _parse_markdown_table(markdown_content: str, column_name: str) -> list[str]:
