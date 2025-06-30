@@ -6,7 +6,7 @@ import FinalSelectionModal from './FinalSelectionModal';
 import SentimentAnalysisModal from './SentimentAnalysisModal';
 import FastGrowersVettingModal from './FastGrowersVettingModal';
 import TurnaroundsVettingModal from './TurnaroundsVettingModal';
-import { Box, Button, Grid, Typography } from '@mui/material';
+import { Box, Button, Grid, Typography, Container, Paper } from '@mui/material';
 
 const stepsConfig = [
   { id: 'idea_generation', name: 'Step 1: AI-Powered Idea Generation' },
@@ -421,7 +421,7 @@ const Dashboard = () => {
   }
 
   return (
-    <Box className="dashboard" sx={{ p: 2 }}>
+    <Container className="dashboard" sx={{ py: 2 }}>
       <Box component="header" className="dashboard-header" sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h4">Stock Analysis Workflow</Typography>
         <Button variant="contained" onClick={startAnalysis} disabled={analysisInProgress}>
@@ -440,16 +440,16 @@ const Dashboard = () => {
           </Grid>
         ))}
       </Grid>
-      <Box className="results" sx={{ mt: 4 }}>
+      <Paper className="results" sx={{ mt: 4, p: 2 }}>
         <Typography variant="h5" sx={{ mb: 2 }}>Final Selected Stocks</Typography>
         <Grid container spacing={2} className="stock-list">
-            {finalStocks.map(stock => (
-                <Grid item xs={12} sm={6} md={4} key={stock.ticker}>
-                  <StockCard stock={stock} onClick={() => handleStockClick(stock)} />
-                </Grid>
-            ))}
+          {finalStocks.map(stock => (
+            <Grid item xs={12} sm={6} md={4} key={stock.ticker}>
+              <StockCard stock={stock} onClick={() => handleStockClick(stock)} />
+            </Grid>
+          ))}
         </Grid>
-      </Box>
+      </Paper>
       {showFinalSelectionModal && (
         <FinalSelectionModal
           data={finalSelectionData}
@@ -474,7 +474,7 @@ const Dashboard = () => {
           onClose={handleCloseTurnaroundsVettingModal}
         />
       )}
-    </Box>
+    </Container>
   );
 };
 
