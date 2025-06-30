@@ -6,7 +6,7 @@ import FinalSelectionModal from './FinalSelectionModal';
 import SentimentAnalysisModal from './SentimentAnalysisModal';
 import FastGrowersVettingModal from './FastGrowersVettingModal';
 import TurnaroundsVettingModal from './TurnaroundsVettingModal';
-import './Dashboard.css';
+import { Box, Button, Grid, Typography } from '@mui/material';
 
 const stepsConfig = [
   { id: 'idea_generation', name: 'Step 1: AI-Powered Idea Generation' },
@@ -420,32 +420,35 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <h1>Stock Analysis Workflow</h1>
-        <button onClick={startAnalysis} disabled={analysisInProgress}>
+    <Box className="dashboard" sx={{ p: 2 }}>
+      <Box component="header" className="dashboard-header" sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h4">Stock Analysis Workflow</Typography>
+        <Button variant="contained" onClick={startAnalysis} disabled={analysisInProgress}>
           {analysisInProgress ? 'Analysis in Progress...' : 'Start Full Analysis'}
-        </button>
-      </header>
-      <div className="workflow-steps">
+        </Button>
+      </Box>
+      <Grid container spacing={2} className="workflow-steps">
         {steps.map(step => (
-          <Step
-            key={step.id}
-            step={step}
-            onToggleCache={handleToggleCache}
-            onViewData={handleViewData}
-            isClickable={!analysisInProgress}
-          />
+          <Grid item xs={12} sm={6} md={4} key={step.id}>
+            <Step
+              step={step}
+              onToggleCache={handleToggleCache}
+              onViewData={handleViewData}
+              isClickable={!analysisInProgress}
+            />
+          </Grid>
         ))}
-      </div>
-      <div className="results">
-        <h2>Final Selected Stocks</h2>
-        <div className="stock-list">
+      </Grid>
+      <Box className="results" sx={{ mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2 }}>Final Selected Stocks</Typography>
+        <Grid container spacing={2} className="stock-list">
             {finalStocks.map(stock => (
-                <StockCard key={stock.ticker} stock={stock} onClick={() => handleStockClick(stock)} />
+                <Grid item xs={12} sm={6} md={4} key={stock.ticker}>
+                  <StockCard stock={stock} onClick={() => handleStockClick(stock)} />
+                </Grid>
             ))}
-        </div>
-      </div>
+        </Grid>
+      </Box>
       {showFinalSelectionModal && (
         <FinalSelectionModal
           data={finalSelectionData}
@@ -470,7 +473,7 @@ const Dashboard = () => {
           onClose={handleCloseTurnaroundsVettingModal}
         />
       )}
-    </div>
+    </Box>
   );
 };
 

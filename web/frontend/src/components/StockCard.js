@@ -1,23 +1,29 @@
 import React from 'react';
-import './StockCard.css';
+import { Card, CardContent, Typography } from '@mui/material';
 
 const StockCard = ({ stock, onClick }) => {
   return (
-    <div className="stock-card" onClick={onClick}>
-      <h3>{stock.company_name} ({stock.ticker})</h3>
-      <p className="stock-category">Category: {stock.category}</p>
-      {stock.sector && stock.industry && (
-        <p className="stock-sector-industry">{stock.sector} | {stock.industry}</p>
-      )}
-      <div className="metrics-summary">
-        {stock.market_cap && (
-          <p>Market Cap: {stock.market_cap.toLocaleString()}</p>
+    <Card onClick={onClick} sx={{ cursor: 'pointer' }}>
+      <CardContent>
+        <Typography variant="h6">{stock.company_name} ({stock.ticker})</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Category: {stock.category}
+        </Typography>
+        {stock.sector && stock.industry && (
+          <Typography variant="body2" color="text.secondary">
+            {stock.sector} | {stock.industry}
+          </Typography>
         )}
-        {stock.pe_ratio !== null && stock.pe_ratio !== undefined && (
-          <p>P/E Ratio: {stock.pe_ratio}</p>
-        )}
-      </div>
-    </div>
+        <div className="metrics-summary">
+          {stock.market_cap && (
+            <Typography variant="body2">Market Cap: {stock.market_cap.toLocaleString()}</Typography>
+          )}
+          {stock.pe_ratio !== null && stock.pe_ratio !== undefined && (
+            <Typography variant="body2">P/E Ratio: {stock.pe_ratio}</Typography>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

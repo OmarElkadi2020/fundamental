@@ -1,5 +1,5 @@
 import React from 'react';
-import './Step.css';
+import { Card, CardContent, Typography, Checkbox, FormControlLabel, Button, Box } from '@mui/material';
 
 const Step = ({ step, onToggleCache, onViewData, isClickable }) => {
   const { id, name, status, useCache } = step;
@@ -16,28 +16,36 @@ const Step = ({ step, onToggleCache, onViewData, isClickable }) => {
     onViewData(id);
   };
 
+  const borderColors = {
+    pending: 'grey.300',
+    running: 'warning.main',
+    completed: 'success.main',
+    failed: 'error.main'
+  };
+
   return (
-    <div className={`step ${status}`}>
-      <div className="step-info">
-        <h3>{name}</h3>
-        <div className="step-controls">
-          <label className="cache-toggle">
-            <input
-              type="checkbox"
-              checked={useCache}
-              onChange={handleToggle}
-              disabled={!isClickable}
-            />
-            <span>Use Cache</span>
-          </label>
+    <Card sx={{ borderLeft: 4, borderColor: borderColors[status] || 'grey.300' }}>
+      <CardContent>
+        <Typography variant="h6">{name}</Typography>
+        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={useCache}
+                onChange={handleToggle}
+                disabled={!isClickable}
+              />
+            }
+            label="Use Cache"
+          />
           {status === 'completed' && (
-            <button onClick={handleView} className="view-data-btn">
+            <Button size="small" variant="outlined" onClick={handleView}>
               View Data
-            </button>
+            </Button>
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 
