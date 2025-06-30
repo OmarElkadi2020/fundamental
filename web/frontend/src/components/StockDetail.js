@@ -35,9 +35,9 @@ const StockDetail = ({ stock, onBack }) => {
             <Typography variant="subtitle1" sx={{ mt: 1 }}>Sentiment Analysis</Typography>
             <Typography>
               <strong>Score:</strong>
-              {stock.sentiment_analysis && stock.sentiment_analysis.score !== null ?
-                <span className={getSentimentColor(stock.sentiment_analysis.score)}>{stock.sentiment_analysis.score.toFixed(2)}</span>
-                : 'N/A'}
+              {stock.sentiment_analysis?.score != null ? 
+              <span className={getSentimentColor(stock.sentiment_analysis.score)}>{stock.sentiment_analysis.score.toFixed(2)}</span> 
+              : 'N/A'}
             </Typography>
             <Typography><strong>Summary:</strong> {stock.sentiment_analysis?.summary ?? 'N/A'}</Typography>
           </Box>
@@ -58,7 +58,7 @@ const StockDetail = ({ stock, onBack }) => {
 
           <Typography variant="h6" sx={{ mt: 2 }}>Financials</Typography>
           <Typography><strong>Market Cap:</strong> {stock.info?.marketCap ? stock.info.marketCap.toLocaleString() : 'N/A'}</Typography>
-          <Typography><strong>Trailing P/E:</strong> {stock.info?.trailingPE !== null ? stock.info.trailingPE.toFixed(2) : 'N/A'}</Typography>
+          <Typography><strong>Trailing P/E:</strong> {stock.info?.trailingPE != null ? stock.info.trailingPE.toFixed(2) : 'N/A'}</Typography>
           <Typography><strong>Forward P/E:</strong> {stock.info?.forwardPE !== null ? stock.info.forwardPE.toFixed(2) : 'N/A'}</Typography>
           <Typography><strong>Dividend Yield:</strong> {stock.info?.dividendYield !== null ? (stock.info.dividendYield * 100).toFixed(2) + '%' : 'N/A'}</Typography>
           <Typography><strong>Beta:</strong> {stock.info?.beta !== null ? stock.info.beta.toFixed(2) : 'N/A'}</Typography>
