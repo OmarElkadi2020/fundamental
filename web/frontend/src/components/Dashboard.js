@@ -173,7 +173,10 @@ const Dashboard = () => {
                   parsedVettingResult = [];
                 }
               }
-              vettedFastGrowersData = parsedVettingResult;
+              vettedFastGrowersData = vettedFastGrowersData.map(stock => {
+                const vettingResultForStock = parsedVettingResult.find(res => res.ticker === stock.ticker);
+                return { ...stock, ...vettingResultForStock };
+              });
             }
             break;
 
@@ -202,7 +205,10 @@ const Dashboard = () => {
                   parsedVettingResult = [];
                 }
               }
-              vettedTurnaroundsData = parsedVettingResult;
+              vettedTurnaroundsData = vettedTurnaroundsData.map(stock => {
+                const vettingResultForStock = parsedVettingResult.find(res => res.ticker === stock.ticker);
+                return { ...stock, ...vettingResultForStock };
+              });
             }
             break;
 
@@ -340,59 +346,69 @@ const Dashboard = () => {
 
   const handleViewData = async (stepId) => {
     const step = steps.find(s => s.id === stepId);
-    if (step && step.data) {
-      let displayData = step.data.content;
-      if (step.data.format === 'text') {
+    if (!step) return;
+
+    try {
+      const response = await fetch('/api/run_analysis_step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: step.id, use_cache: true }), // Request cached data for viewing
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch data for ${step.name}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      let displayData = result.data.content;
+
+      // First, extract JSON from markdown if format is text
+      if (result.data.format === 'text') {
         try {
-          const jsonString = _extractJsonFromMarkdown(step.data.content);
-          if (jsonString.trim()) { // Only parse if not empty
-            displayData = JSON.parse(jsonString);
+          const jsonString = _extractJsonFromMarkdown(result.data.content);
+          if (jsonString.trim()) {
+            displayData = JSON.parse(jsonString); // Correctly reassign parsed data
           } else {
-            console.warn(`Data for ${step.name} is text and empty after markdown extraction.`);
-            displayData = null; // Set to null or empty array/object as appropriate
+            console.warn(`Extracted JSON string for ${step.name} is empty.`);
+            displayData = []; // Default to empty array if no valid JSON
           }
         } catch (e) {
-          console.warn(`Data for ${step.name} is text and not JSON parsable. Keeping as raw text.`, e);
-          // Keep displayData as raw text if parsing fails
+          console.error(`Error parsing AI data from text for ${step.name}:`, e);
+          displayData = []; // Default to empty array on parse error
         }
       }
 
+      // Then, transform data if it's an object (e.g., from vetting or sentiment analysis steps)
+      if (typeof displayData === 'object' && displayData !== null && !Array.isArray(displayData)) {
+        displayData = Object.entries(displayData).map(([ticker, details]) => {
+          const stockInfo = finalStocks.find(s => s.ticker === ticker) || {};
+          return { ticker, company_name: stockInfo.company_name || 'N/A', ...details };
+        });
+      }
+
       if (stepId === 'final_selection_synthesis') {
-        try {
-          setFinalSelectionData(displayData);
-          setShowFinalSelectionModal(true);
-        } catch (e) {
-          console.error("Error setting final selection data for modal:", e);
-          alert(`Error displaying data for ${step.name}:\n` + e.message);
-        }
+        setFinalSelectionData(displayData);
+        setShowFinalSelectionModal(true);
       } else if (stepId === 'sentiment_analysis') {
-        try {
-          setSentimentData(displayData);
-          setShowSentimentModal(true);
-        } catch (e) {
-          console.error("Error setting sentiment analysis data for modal:", e);
-          alert(`Error displaying data for ${step.name}:\n` + e.message);
-        }
+        console.log('Sentiment data for modal:', displayData);
+        setSentimentData(displayData);
+        setShowSentimentModal(true);
       } else if (stepId === 'vetting_fast_growers') {
-        try {
-          setFastGrowersVettingData(displayData);
-          setShowFastGrowersVettingModal(true);
-        } catch (e) {
-          console.error("Error setting fast growers vetting data for modal:", e);
-          alert(`Error displaying data for ${step.name}:\n` + e.message);
-        }
+        console.log('Vetting data for modal (Fast Growers):', displayData);
+        setFastGrowersVettingData(displayData);
+        setShowFastGrowersVettingModal(true);
       } else if (stepId === 'vetting_turnarounds') {
-        try {
-          setTurnaroundsVettingData(displayData);
-          setShowTurnaroundsVettingModal(true);
-        } catch (e) {
-          console.error("Error setting turnarounds vetting data for modal:", e);
-          alert(`Error displaying data for ${step.name}:\n` + e.message);
-        }
+        console.log('Vetting data for modal (Turnarounds):', displayData);
+        setTurnaroundsVettingData(displayData);
+        setShowTurnaroundsVettingModal(true);
       } else {
-        console.log(`Data for ${step.name}:`, step.data);
+        // For other steps, just alert the raw data for now
         alert(`Data for ${step.name}:\n` + JSON.stringify(displayData, null, 2));
       }
+    } catch (error) {
+      console.error(`Error viewing data for step ${step.id}:`, error);
+      alert(`Failed to load data for ${step.name}. Please try again.\nError: ${error.message}`);
     }
   };
 
@@ -421,35 +437,82 @@ const Dashboard = () => {
   }
 
   return (
-    <Container className="dashboard" sx={{ py: 2 }}>
-      <Box component="header" className="dashboard-header" sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h4">Stock Analysis Workflow</Typography>
-        <Button variant="contained" onClick={startAnalysis} disabled={analysisInProgress}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
+      <Box sx={{ mb: { xs: 4, md: 6 }, textAlign: 'center' }}>
+        <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.dark', letterSpacing: '0.05em', fontSize: { xs: '2rem', md: '3rem' } }}>
+          AI-Powered Stock Analysis Workflow
+        </Typography>
+        <Typography variant="h5" color="text.secondary" sx={{ mb: { xs: 2, md: 4 }, maxWidth: '800px', mx: 'auto', fontSize: { xs: '1rem', md: '1.5rem' } }}>
+          Navigate through the automated stock selection process, from initial idea generation to final investment synthesis.
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          size="large"
+          onClick={startAnalysis}
+          disabled={analysisInProgress}
+          sx={{
+            px: { xs: 3, md: 6 },
+            py: { xs: 1, md: 1.8 },
+            borderRadius: '30px',
+            fontSize: { xs: '0.9rem', md: '1.1rem' },
+            fontWeight: 'bold',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+            '&:hover': {
+              boxShadow: '0 6px 15px rgba(0,0,0,0.2)',
+            },
+          }}
+        >
           {analysisInProgress ? 'Analysis in Progress...' : 'Start Full Analysis'}
         </Button>
       </Box>
-      <Grid container spacing={2} className="workflow-steps">
-        {steps.map(step => (
-          <Grid item xs={12} sm={6} md={4} key={step.id}>
+
+      <Paper elevation={6} sx={{ p: { xs: 2, md: 4 }, mb: { xs: 4, md: 6 }, borderRadius: '16px', bgcolor: 'background.paper' }}>
+        <Typography variant="h4" component="h2" sx={{ mb: { xs: 2, md: 4 }, fontWeight: 'bold', color: 'primary.main', fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+          Workflow Steps
+        </Typography>
+        <Box sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))',
+            sm: 'repeat(auto-fit, minmax(min(300px, 50%), 1fr))',
+            md: 'repeat(auto-fit, minmax(min(300px, 33.3333%), 1fr))'
+          },
+          gap: { xs: '16px', md: '32px' }, // Use gap for spacing
+        }}>
+          {steps.map(step => (
             <Step
+              key={step.id}
               step={step}
               onToggleCache={handleToggleCache}
               onViewData={handleViewData}
               isClickable={!analysisInProgress}
             />
-          </Grid>
-        ))}
-      </Grid>
-      <Paper className="results" sx={{ mt: 4, p: 2 }}>
-        <Typography variant="h5" sx={{ mb: 2 }}>Final Selected Stocks</Typography>
-        <Grid container spacing={2} className="stock-list">
-          {finalStocks.map(stock => (
-            <Grid item xs={12} sm={6} md={4} key={stock.ticker}>
-              <StockCard stock={stock} onClick={() => handleStockClick(stock)} />
-            </Grid>
           ))}
-        </Grid>
+        </Box>
       </Paper>
+
+      {finalStocks.length > 0 && (
+        <Paper elevation={6} sx={{ p: { xs: 2, md: 4 }, borderRadius: '16px', bgcolor: 'background.paper' }}>
+          <Typography variant="h4" component="h2" sx={{ mb: { xs: 2, md: 4 }, fontWeight: 'bold', color: 'primary.main', fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+            Final Selected Stocks
+          </Typography>
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: 'repeat(auto-fit, minmax(min(250px, 100%), 1fr))',
+              sm: 'repeat(auto-fit, minmax(min(250px, 50%), 1fr))',
+              md: 'repeat(auto-fit, minmax(min(250px, 25%), 1fr))' // 4 cards per row
+            },
+            gap: { xs: '16px', md: '32px' }, // Use gap for spacing
+          }}>
+            {finalStocks.map(stock => (
+              <StockCard key={stock.ticker} stock={stock} onClick={() => handleStockClick(stock)} />
+            ))}
+          </Box>
+        </Paper>
+      )}
+
       {showFinalSelectionModal && (
         <FinalSelectionModal
           data={finalSelectionData}

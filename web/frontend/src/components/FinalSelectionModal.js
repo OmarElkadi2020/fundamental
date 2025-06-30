@@ -1,28 +1,70 @@
 import React from 'react';
-import { Modal, Box, Typography, Grid, Paper, Button } from '@mui/material';
+import { Modal, Box, Typography, Grid, Paper, Button, IconButton, Stack } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 
-import './FinalSelectionModal.css';
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: { xs: '95%', md: '80%', lg: '60%' },
+  maxHeight: '90vh',
+  bgcolor: 'background.paper',
+  borderRadius: '16px',
+  boxShadow: 24,
+  p: { xs: 2, md: 3 },
+  overflowY: 'auto',
+  outline: 'none',
+};
 
 const FinalSelectionModal = ({ data, onClose }) => {
   if (!data) return null;
 
   return (
     <Modal open={!!data} onClose={onClose}>
-      <Box className="modal-content-box">
-        <Typography variant="h6" sx={{ mb: 2 }}>Final Selection &amp; Synthesis</Typography>
-        <Grid container spacing={2} className="stock-grid">
-          {data.map((stock, index) => (
-            <Grid item xs={12} sm={6} key={index}>
-              <Paper className="stock-item" sx={{ p: 2 }}>
-                <Typography variant="subtitle1" sx={{ mb: 1 }}>{stock.company_name} ({stock.ticker})</Typography>
-                <Typography variant="body2"><strong>Category:</strong> {stock.category}</Typography>
-                <Typography variant="body2"><strong>Investment Thesis:</strong> {stock.investment_thesis}</Typography>
+      <Box sx={style}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+            Final Selection &amp; Synthesis
+          </Typography>
+          <IconButton onClick={onClose} aria-label="close">
+            <CloseIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Box>
+
+        <Grid container spacing={2}>
+          {data.length > 0 ? data.map((stock, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Paper elevation={2} sx={{ p: 2, borderRadius: '12px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="subtitle1" sx={{ mb: 0.5, fontWeight: 'bold', color: 'text.primary' }}>
+                  {stock.ticker}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                  {stock.company_name}
+                </Typography>
+                
+                <Stack spacing={0.5} sx={{ mt: 'auto' }}>
+                  <Typography variant="body2"><strong>Category:</strong> {stock.category}</Typography>
+                  <Typography variant="body2"><strong>Investment Thesis:</strong></Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {stock.investment_thesis ?? 'No investment thesis available.'}
+                  </Typography>
+                </Stack>
               </Paper>
             </Grid>
-          ))}
+          )) : (
+            <Grid item xs={12}>
+              <Typography variant="body1" color="text.secondary" textAlign="center">
+                No final selection data available.
+              </Typography>
+            </Grid>
+          )}
         </Grid>
-        <Box textAlign="center" sx={{ mt: 3 }}>
-          <Button variant="contained" onClick={onClose}>Close</Button>
+
+        <Box sx={{ mt: 3, textAlign: 'center' }}>
+          <Button variant="contained" color="primary" onClick={onClose} size="medium" sx={{ px: 3, borderRadius: '20px' }}>
+            Close
+          </Button>
         </Box>
       </Box>
     </Modal>
