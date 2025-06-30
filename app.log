@@ -1,0 +1,63 @@
+2025-06-30 12:33:01,714 - stock_screener - INFO - Running analysis step: filtering (Use Cache: True)
+2025-06-30 12:33:01,715 - stock_screener - ERROR - Payload with ideas is required for filtering step.
+2025-06-30 12:33:01,715 - stock_screener - ERROR - An error occurred during analysis step filtering: 400: Payload with ideas is required for filtering step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 92, in run_analysis_step
+    raise HTTPException(status_code=400, detail="Payload with ideas is required for filtering step.")
+fastapi.exceptions.HTTPException: 400: Payload with ideas is required for filtering step.
+2025-06-30 12:37:08,947 - stock_screener - INFO - Running analysis step: filtering (Use Cache: True)
+2025-06-30 12:37:08,948 - stock_screener - ERROR - Payload with ideas is required for filtering step.
+2025-06-30 12:37:08,949 - stock_screener - ERROR - An error occurred during analysis step filtering: 400: Payload with ideas is required for filtering step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 107, in run_analysis_step
+    raise HTTPException(status_code=400, detail="Payload with ideas is required for filtering step.")
+fastapi.exceptions.HTTPException: 400: Payload with ideas is required for filtering step.
+2025-06-30 12:37:19,113 - stock_screener - INFO - Running analysis step: filtering (Use Cache: True)
+2025-06-30 12:37:19,114 - stock_screener - ERROR - Payload with ideas is required for filtering step.
+2025-06-30 12:37:19,114 - stock_screener - ERROR - An error occurred during analysis step filtering: 400: Payload with ideas is required for filtering step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 107, in run_analysis_step
+    raise HTTPException(status_code=400, detail="Payload with ideas is required for filtering step.")
+fastapi.exceptions.HTTPException: 400: Payload with ideas is required for filtering step.
+2025-06-30 12:37:20,897 - stock_screener - INFO - Running analysis step: filtering (Use Cache: True)
+2025-06-30 12:37:20,897 - stock_screener - ERROR - Payload with ideas is required for filtering step.
+2025-06-30 12:37:20,898 - stock_screener - ERROR - An error occurred during analysis step filtering: 400: Payload with ideas is required for filtering step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 107, in run_analysis_step
+    raise HTTPException(status_code=400, detail="Payload with ideas is required for filtering step.")
+fastapi.exceptions.HTTPException: 400: Payload with ideas is required for filtering step.
+2025-06-30 12:38:06,565 - stock_screener - INFO - Starting up application...
+2025-06-30 12:38:07,395 - stock_screener - INFO - Running analysis step: filtering (Use Cache: True)
+2025-06-30 12:38:07,396 - stock_screener - ERROR - Payload with ideas is required for filtering step.
+2025-06-30 12:38:07,396 - stock_screener - ERROR - An error occurred during analysis step filtering: 400: Payload with ideas is required for filtering step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 90, in run_analysis_step
+    raise HTTPException(status_code=400, detail="Payload with ideas is required for filtering step.")
+fastapi.exceptions.HTTPException: 400: Payload with ideas is required for filtering step.
+2025-06-30 12:38:14,503 - stock_screener - INFO - Shutting down application...
+2025-06-30 12:38:33,174 - stock_screener - INFO - Starting up application...
+2025-06-30 12:38:35,817 - stock_screener - INFO - Running analysis step: filtering (Use Cache: True)
+2025-06-30 12:38:35,818 - stock_screener - ERROR - Payload with ideas is required for filtering step.
+2025-06-30 12:38:35,818 - stock_screener - ERROR - An error occurred during analysis step filtering: 400: Payload with ideas is required for filtering step.
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 90, in run_analysis_step
+    raise HTTPException(status_code=400, detail="Payload with ideas is required for filtering step.")
+fastapi.exceptions.HTTPException: 400: Payload with ideas is required for filtering step.
+2025-06-30 12:39:16,589 - stock_screener - INFO - Shutting down application...
+2025-06-30 12:39:21,050 - stock_screener - INFO - Starting up application...
+2025-06-30 12:39:49,701 - stock_screener - INFO - Shutting down application...
+2025-06-30 12:40:10,652 - stock_screener - INFO - Starting up application...
+2025-06-30 12:40:13,076 - stock_screener - INFO - Running analysis step: filtering (Use Cache: True)
+2025-06-30 14:31:02,787 - stock_screener - INFO - Starting up application...
+2025-06-30 14:31:04,133 - stock_screener - INFO - Running analysis step: filtering (Use Cache: True)
+2025-06-30 14:31:04,133 - stock_screener - ERROR - An error occurred during analysis step filtering: 'AIEvaluationService' object has no attribute 'filter_stock_ideas'
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 91, in run_analysis_step
+    result = vetting_service.ai_service.filter_stock_ideas(stock_ideas=payload['ideas'], count=50)
+AttributeError: 'AIEvaluationService' object has no attribute 'filter_stock_ideas'
+2025-06-30 14:31:05,361 - stock_screener - INFO - Running analysis step: filtering (Use Cache: True)
+2025-06-30 14:31:05,361 - stock_screener - ERROR - An error occurred during analysis step filtering: 'AIEvaluationService' object has no attribute 'filter_stock_ideas'
+Traceback (most recent call last):
+  File "/home/omar/projects/fundamental/app.py", line 91, in run_analysis_step
+    result = vetting_service.ai_service.filter_stock_ideas(stock_ideas=payload['ideas'], count=50)
+AttributeError: 'AIEvaluationService' object has no attribute 'filter_stock_ideas'

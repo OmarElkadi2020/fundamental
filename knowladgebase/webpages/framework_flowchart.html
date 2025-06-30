@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Investment Framework Flowchart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #334155; /* slate-700 */
+        }
+       .flow-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+       .flow-node,.flow-decision,.flow-process,.flow-io,.flow-end {
+            width: 100%;
+            max-width: 700px;
+            border: 1px solid #cbd5e1; /* slate-300 */
+            background-color: #ffffff;
+            padding: 1.25rem;
+            text-align: center;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+       .flow-process {
+            border-radius: 0.5rem;
+        }
+       .flow-decision {
+            transform: skewX(-20deg);
+            border-radius: 0.25rem;
+        }
+       .flow-decision-content {
+            transform: skewX(20deg);
+        }
+       .flow-io {
+            border-radius: 0.5rem;
+            border-style: dashed;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+       .flow-end {
+            border-radius: 9999px;
+            background-color: #1e293b; /* slate-800 */
+            color: #f1f5f9; /* slate-100 */
+        }
+       .flow-arrow {
+            font-size: 2rem;
+            color: #94a3b8; /* slate-400 */
+            line-height: 1;
+            font-weight: bold;
+        }
+       .flow-label {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.8rem;
+            color: #64748b; /* slate-500 */
+            background-color: #f1f5f9;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+       .criteria-list {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            color: #475569; /* slate-600 */
+            text-align: left;
+            margin-top: 0.75rem;
+        }
+       .criteria-value {
+            color: #4f46e5; /* indigo-600 */
+            font-weight: 700;
+        }
+       .path-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        @media (min-width: 1024px) {
+           .path-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+       .path-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center my-8">
+            <h1 class="text-3xl font-bold text-slate-900">Unified Investment Framework Flowchart</h1>
+            <p class="mt-2 text-lg text-slate-500">A detailed synthesis of the Lynch and O'Neil strategies, based on the "Architects of Alpha" report.</p>
+        </header>
+
+        <div class="flow-container">
+
+            <div class="flow-process">
+                <h2 class="text-xl font-bold text-slate-800">Step 1: Idea Generation (Lynch/Fisher Foundation)</h2>
+                <p class="mt-2">The process begins with qualitative, real-world observation to build a list of potential investment ideas.</p>
+                <ul class="criteria-list list-disc list-inside space-y-2">
+                    <li><strong>"Invest in What You Know":</strong> Identify companies from everyday life (favorite products, expanding local businesses).</li>
+                    <li><strong>"Scuttlebutt" Method:</strong> Investigate by gathering informal intelligence from sources like:
+                        <ul class="list-['-_'] list-inside pl-4 mt-1">
+                            <li>Customers (reviews, satisfaction)</li>
+                            <li>Employees (morale, culture via Glassdoor)</li>
+                            <li>Suppliers & Competitors</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-io">
+                <h3 class="font-semibold">Output: Initial List of Companies with a Compelling "Story"</h3>
+            </div>
+            <div class="flow-arrow">↓</div>
+
+            <div class="flow-process">
+                <h2 class="text-xl font-bold text-slate-800">Step 2: Categorization & Triage (Lynch Framework)</h2>
+                <p class="mt-2">Classify each company to set expectations and define the analytical path. This is a critical triage step.</p>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-decision">
+                <div class="flow-decision-content">
+                    <h3 class="font-bold">Is the stock a "Fast Grower" or "Stalwart"?</h3>
+                    <ul class="criteria-list list-disc list-inside space-y-1">
+                        <li><strong>Fast Grower:</strong> Earnings Growth <span class="criteria-value">> 20-25%</span> annually.</li>
+                        <li><strong>Stalwart:</strong> Earnings Growth <span class="criteria-value">10-12%</span> annually.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flex w-full max-w-3xl">
+                <div class="w-1/2 text-center"><div class="flow-arrow">↓</div><div class="flow-label">NO</div></div>
+                <div class="w-1/2 text-center"><div class="flow-arrow">↓</div><div class="flow-label">YES</div></div>
+            </div>
+            <div class="flex w-full max-w-3xl">
+                <div class="w-1/2 pr-4">
+                    <div class="flow-process h-full">
+                        <h3 class="font-semibold">Analyze Separately or Discard</h3>
+                        <p class="text-sm mt-2">If Slow Grower, Cyclical, Turnaround, or Asset Play, apply category-specific rules (e.g., check inventory for cyclicals, balance sheet for turnarounds). These are outside the primary "big earnings" flow.</p>
+                    </div>
+                </div>
+                <div class="w-1/2 pl-4">
+                    <div class="flow-io h-full">
+                        <h3 class="font-semibold">Output: Curated List of Fast Growers & Stalwarts</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="flow-arrow">↓</div>
+
+            <div class="flow-process">
+                <h2 class="text-xl font-bold text-slate-800">Step 3: Rigorous Vetting (O'Neil's CAN SLIM Filter)</h2>
+                <p class="mt-2">Subject the curated list to a demanding quantitative filter to ensure the story is backed by the statistical DNA of a market winner.</p>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-decision">
+                <div class="flow-decision-content">
+                    <h3 class="font-bold">Check 'C' & 'A': Earnings Growth</h3>
+                    <ul class="criteria-list list-disc list-inside space-y-1">
+                        <li>Current Quarterly EPS Growth >= <span class="criteria-value">25%</span></li>
+                        <li>Current Quarterly Sales Growth >= <span class="criteria-value">25%</span></li>
+                        <li>Annual EPS Growth (3-5yr) >= <span class="criteria-value">25%</span></li>
+                        <li>Return on Equity (ROE) >= <span class="criteria-value">17%</span></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flow-arrow">↓</div><div class="flow-label">PASS</div>
+            <div class="flow-decision">
+                <div class="flow-decision-content">
+                    <h3 class="font-bold">Check 'L' & 'I': Leadership & Sponsorship</h3>
+                    <ul class="criteria-list list-disc list-inside space-y-1">
+                        <li>Relative Strength (RS) Rating >= <span class="criteria-value">80</span></li>
+                        <li>Company is #1 or #2 in a leading industry</li>
+                        <li>Increasing sponsorship by quality institutions (but not yet oversaturated)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flow-arrow">↓</div><div class="flow-label">PASS</div>
+            <div class="flow-io">
+                <h3 class="font-semibold">Output: Vetted Watchlist of High-Potential Stocks</h3>
+            </div>
+            <div class="flow-arrow">↓</div>
+
+            <div class="flow-process">
+                <h2 class="text-xl font-bold text-slate-800">Step 4: Entry, Exit & Risk Management (The Final Decision)</h2>
+                <p class="mt-2">Choose an investment identity. This decision dictates the rules for buying, selling, and managing risk.</p>
+            </div>
+
+            <div class="path-container">
+                <div class="path-column">
+                    <h3 class="text-lg font-bold text-center">Path A: The Owner<br>(Lynch Approach)</h3>
+                    <div class="flow-arrow">↓</div>
+                    <div class="flow-decision w-full">
+                        <div class="flow-decision-content"><h4 class="font-semibold">PEG Ratio <= <span class="criteria-value">1.0</span>?</h4></div>
+                    </div>
+                    <div class="flow-arrow">↓</div><div class="flow-label">YES</div>
+                    <div class="flow-process w-full">
+                        <h4 class="font-bold text-green-600">BUY</h4>
+                        <p class="text-sm mt-2"><strong>Hold Rule:</strong> As long as fundamental story remains intact.</p>
+                        <p class="text-sm mt-1"><strong>Risk Mgt:</strong> Periodically re-evaluate fundamentals. No hard stop-loss.</p>
+                    </div>
+                </div>
+                <div class="path-column">
+                    <h3 class="text-lg font-bold text-center">Path B: The Trader<br>(O'Neil Approach)</h3>
+                    <div class="flow-arrow">↓</div>
+                    <div class="flow-decision w-full">
+                        <div class="flow-decision-content"><h4 class="font-semibold">'M': Confirmed Market Uptrend?</h4></div>
+                    </div>
+                    <div class="flow-arrow">↓</div><div class="flow-label">YES</div>
+                    <div class="flow-decision w-full">
+                        <div class="flow-decision-content"><h4 class="font-semibold">'N'/'S': Breakout from Base on Volume > <span class="criteria-value">50%</span> Avg?</h4></div>
+                    </div>
+                    <div class="flow-arrow">↓</div><div class="flow-label">YES</div>
+                    <div class="flow-process w-full">
+                        <h4 class="font-bold text-green-600">BUY</h4>
+                        <p class="text-sm mt-2"><strong>Hold Rule:</strong> Monitor for signs of topping.</p>
+                        <p class="text-sm mt-1"><strong>Risk Mgt:</strong> Absolute, non-negotiable <span class="criteria-value">7-8%</span> stop-loss from purchase price.</p>
+                    </div>
+                </div>
+                <div class="path-column">
+                    <h3 class="text-lg font-bold text-center">Path C: The Hybrid<br>(Disciplined Owner)</h3>
+                    <div class="flow-arrow">↓</div>
+                    <div class="flow-decision w-full">
+                        <div class="flow-decision-content"><h4 class="font-semibold">PEG Ratio <= <span class="criteria-value">1.0</span>?</h4></div>
+                    </div>
+                    <div class="flow-arrow">↓</div><div class="flow-label">YES</div>
+                    <div class="flow-process w-full">
+                        <h4 class="font-bold text-green-600">BUY</h4>
+                        <p class="text-sm mt-2"><strong>Position Sizing:</strong> Buy small initial position. Add aggressively only during a confirmed market uptrend ('M').</p>
+                        <p class="text-sm mt-1"><strong>Risk Mgt:</strong> Use technical breakdown (e.g., close below 200-day MA) as a "mental stop" to trigger immediate fundamental re-evaluation.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flow-arrow">↓</div>
+            <div class="flow-end">
+                <h2 class="text-xl font-bold">END: Monitor Portfolio & Repeat Process</h2>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

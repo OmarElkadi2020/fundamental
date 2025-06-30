@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architects of Alpha: An Interactive Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <!-- Chosen Palette: Calm Harmony (Warm Neutrals & Indigo Accent) -->
+    <!-- Application Structure Plan: A guided, multi-stage interactive application. The structure walks the user through the process of understanding and synthesizing the two investment philosophies, moving from a high-level comparison to deep dives and finally to building a hybrid strategy. This task-oriented flow (Compare -> Explore -> Build) is more engaging and actionable than a linear report, using interactive cards, charts, and a step-by-step process to facilitate understanding and retention. -->
+    <!-- Visualization & Content Choices: 
+        - Philosophy Comparison (Report Sec 5): Goal: Compare -> Viz: Radar Chart (Chart.js) -> Interaction: Hover tooltips and click-to-highlight buttons update chart and text. Justification: Provides a multi-faceted visual comparison that's more dynamic than a static table.
+        - CAN SLIM Criteria (Report Sec 2.1): Goal: Inform/Organize -> Viz: Interactive flip cards (HTML/CSS/JS) & Bar Chart (Chart.js) -> Interaction: Click cards to reveal details. Justification: Breaks down complex criteria into digestible, interactive chunks.
+        - Lynch's Categories (Report Sec 3.2): Goal: Organize/Inform -> Viz: Filterable grid of cards (HTML/CSS/JS) & Donut Chart (Chart.js) -> Interaction: Click filters to highlight relevant categories. Justification: Allows users to actively engage with and sort Lynch's framework.
+        - Unified Framework (Report Sec 6): Goal: Guide/Organize -> Viz: Step-by-step interactive process flow (HTML/CSS/JS) -> Interaction: User clicks through steps, revealing content and making choices. Justification: Transforms the report's final section into a practical, hands-on tool.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 350px; max-height: 450px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        .tab-button.active { border-color: #4f46e5; color: #4f46e5; background-color: #eef2ff; }
+        .strategy-step { transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out; }
+        .step-card.active { border-color: #4f46e5; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .category-card { transition: opacity 0.3s ease, transform 0.3s ease; }
+        .category-card.inactive { opacity: 0.3; transform: scale(0.95); }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+
+        <header class="text-center my-8 md:my-12">
+            <h1 class="text-4xl md:text-5xl font-black text-stone-900">Architects of Alpha</h1>
+            <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">An interactive guide to synthesizing the master strategies of William J. O'Neil and Peter Lynch for superior stock selection.</p>
+        </header>
+
+        <main class="space-y-20 md:space-y-24">
+
+            <!-- Section 1: Philosophy Showdown -->
+            <section id="comparison">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold">The Arena: Philosophy Showdown</h2>
+                    <p class="mt-2 text-stone-600 max-w-2xl mx-auto">Both O'Neil and Lynch were titans of growth investing, but their methods were distinct. This section allows you to visually compare their core philosophies across key strategic pillars. Interact with the chart and text to understand their fundamental differences.</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6 md:p-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                        <div class="chart-container">
+                            <canvas id="philosophy-chart"></canvas>
+                        </div>
+                        <div id="philosophy-text-container" class="text-left">
+                            <h3 class="text-xl font-bold text-indigo-600 mb-2">Trader vs. Owner</h3>
+                            <p class="text-stone-700">The most profound difference lies in their identities. O'Neil's rigid 7-8% stop-loss is the action of a <span class="font-bold">trader</span> managing price risk. Lynch's focus on a deteriorating fundamental story is the action of a long-term business <span class="font-bold">owner</span> managing business risk. Use the buttons to explore their approaches.</p>
+                        </div>
+                    </div>
+                     <div class="flex justify-center mt-6 space-x-4">
+                        <button id="show-both-btn" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-md shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Show Both</button>
+                        <button id="show-oneil-btn" class="px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-100 rounded-md shadow-sm hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Highlight O'Neil</button>
+                        <button id="show-lynch-btn" class="px-4 py-2 text-sm font-semibold text-purple-700 bg-purple-100 rounded-md shadow-sm hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">Highlight Lynch</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: The Toolkits -->
+            <section id="toolkits">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold">The Toolkits: Deconstructing the Masters</h2>
+                    <p class="mt-2 text-stone-600 max-w-2xl mx-auto">Now, let's open the toolboxes of each investor. Use the tabs below to switch between O'Neil's systematic, seven-point checklist and Lynch's flexible, category-based framework. This allows for a focused look at how each master identified potential winners.</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6 md:p-8">
+                    <div class="border-b border-stone-200 mb-6">
+                        <nav class="-mb-px flex space-x-6 justify-center" aria-label="Tabs">
+                            <button id="tab-oneil" class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg">O'Neil's CAN SLIM</button>
+                            <button id="tab-lynch" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg text-stone-500 hover:text-stone-700 hover:border-stone-300">Lynch's 6 Categories</button>
+                        </nav>
+                    </div>
+
+                    <div id="content-oneil">
+                        <p class="text-center text-stone-600 mb-6 max-w-xl mx-auto">CAN SLIM is a disciplined, evidence-based system. Each letter represents a key trait shared by the market's greatest winning stocks. Click each card to learn its meaning.</p>
+                        <div id="canslim-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-center"></div>
+                        <div id="canslim-detail" class="mt-6 p-4 bg-stone-50 rounded-lg min-h-[100px] text-center flex items-center justify-center">
+                            <p class="text-stone-500">Select a letter to see details.</p>
+                        </div>
+                    </div>
+
+                    <div id="content-lynch" class="hidden">
+                        <p class="text-center text-stone-600 mb-6 max-w-xl mx-auto">Lynch believed you must first categorize a stock to understand its potential. This clarifies risk and sets expectations. Use the filters to see how he prioritized them.</p>
+                        <div class="flex justify-center space-x-2 mb-6">
+                            <button class="category-filter-btn active px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-full" data-filter="all">All Categories</button>
+                            <button class="category-filter-btn px-3 py-1 text-sm bg-stone-100 text-stone-700 rounded-full" data-filter="high-growth">High Growth</button>
+                            <button class="category-filter-btn px-3 py-1 text-sm bg-stone-100 text-stone-700 rounded-full" data-filter="stability">Stability</button>
+                            <button class="category-filter-btn px-3 py-1 text-sm bg-stone-100 text-stone-700 rounded-full" data-filter="special-sits">Special Situations</button>
+                        </div>
+                        <div id="lynch-categories-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: The Forge -->
+            <section id="forge">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold">The Forge: Build Your Hybrid Strategy</h2>
+                    <p class="mt-2 text-stone-600 max-w-2xl mx-auto">The ultimate power lies in synthesis. This section guides you through a unified framework, combining Lynch's real-world idea generation with O'Neil's rigorous quantitative filters. Click through the steps to forge a more robust investment process.</p>
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div id="step-navigation" class="w-full md:w-1/3 space-y-2"></div>
+                    <div id="step-content" class="w-full md:w-2/3 bg-white rounded-lg shadow-lg p-6 min-h-[400px]"></div>
+                </div>
+                 <div class="flex justify-center mt-8 space-x-4">
+                    <button id="prev-step-btn" class="px-6 py-2 text-sm font-semibold text-stone-900 bg-white rounded-md shadow-sm ring-1 ring-inset ring-stone-300 hover:bg-stone-50 disabled:opacity-50">Previous</button>
+                    <button id="next-step-btn" class="px-6 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-md shadow-sm hover:bg-indigo-500 disabled:opacity-50">Next Step</button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-16 py-8 border-t border-stone-200">
+            <p class="text-sm text-stone-500">This interactive application is based on the principles outlined in *How to Make Money in Stocks* by William J. O'Neil and *One Up On Wall Street* by Peter Lynch. It is for educational purposes only and does not constitute financial advice.</p>
+        </footer>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const palette = {
+        oneil: 'rgba(79, 70, 229, 0.7)',
+        lynch: 'rgba(129, 140, 248, 0.7)',
+        oneil_border: 'rgb(79, 70, 229)',
+        lynch_border: 'rgb(129, 140, 248)',
+        text: '#1c1917',
+    };
+
+    const philosophyData = {
+        labels: ['Quantitative Rigor', 'Technical/Chart Focus', 'Valuation Sensitivity', 'Market Timing', 'Long-Term Hold', 'Qualitative "Story"'],
+        datasets: [
+            { label: "O'Neil", data: [9, 9, 4, 10, 5, 6], backgroundColor: palette.oneil, borderColor: palette.oneil_border, borderWidth: 2, pointBackgroundColor: palette.oneil_border },
+            { label: 'Lynch', data: [6, 2, 9, 2, 9, 10], backgroundColor: palette.lynch, borderColor: palette.lynch_border, borderWidth: 2, pointBackgroundColor: palette.lynch_border }
+        ]
+    };
+    
+    const philosophyText = {
+        oneil: {
+            title: "O'Neil's Systematic Approach",
+            text: "O'Neil's strategy is built on a rigid, evidence-based system. He focuses on stocks with explosive earnings growth and strong price momentum, using technical chart patterns for precise entry points. His approach demands strict adherence to rules, especially the 7-8% stop-loss to manage risk."
+        },
+        lynch: {
+            title: "Lynch's Flexible Framework",
+            text: "Lynch championed a qualitative, story-driven approach. He believed in understanding the business first, then using numbers like the PEG ratio to validate the story and avoid overpaying. He was a long-term holder, selling only when the company's fundamentals changed for the worse."
+        },
+        both: {
+            title: "Trader vs. Owner",
+            text: "The most profound difference lies in their identities. O'Neil's rigid 7-8% stop-loss is the action of a trader managing price risk. Lynch's focus on a deteriorating fundamental story is the action of a long-term business owner managing business risk. Use the buttons to explore their approaches."
+        }
+    };
+
+    const tooltipTitleCallback = (tooltipItems) => {
+        const item = tooltipItems[0];
+        let label = item.chart.data.labels[item.dataIndex];
+        return Array.isArray(label) ? label.join(' ') : label;
+    };
+    
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            r: {
+                angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                pointLabels: {
+                    font: { size: 12, weight: '600' },
+                    color: palette.text
+                },
+                ticks: {
+                    backdropColor: 'transparent',
+                    color: palette.text,
+                    stepSize: 2
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: { font: { size: 14 } }
+            },
+            tooltip: {
+                callbacks: { title: tooltipTitleCallback }
+            }
+        }
+    };
+
+    const philosophyChartCtx = document.getElementById('philosophy-chart')?.getContext('2d');
+    let philosophyChart;
+    if (philosophyChartCtx) {
+        philosophyChart = new Chart(philosophyChartCtx, {
+            type: 'radar',
+            data: philosophyData,
+            options: chartOptions
+        });
+    }
+
+    const philosophyTextContainer = document.getElementById('philosophy-text-container');
+    function updatePhilosophyView(mode) {
+        if (!philosophyChart || !philosophyTextContainer) return;
+        philosophyChart.data.datasets[0].hidden = (mode === 'lynch');
+        philosophyChart.data.datasets[1].hidden = (mode === 'oneil');
+        philosophyChart.update();
+
+        const content = philosophyText[mode];
+        philosophyTextContainer.innerHTML = `<h3 class="text-xl font-bold text-indigo-600 mb-2">${content.title}</h3><p class="text-stone-700">${content.text}</p>`;
+    }
+
+    document.getElementById('show-both-btn')?.addEventListener('click', () => updatePhilosophyView('both'));
+    document.getElementById('show-oneil-btn')?.addEventListener('click', () => updatePhilosophyView('oneil'));
+    document.getElementById('show-lynch-btn')?.addEventListener('click', () => updatePhilosophyView('lynch'));
+
+    const tabOneil = document.getElementById('tab-oneil');
+    const tabLynch = document.getElementById('tab-lynch');
+    const contentOneil = document.getElementById('content-oneil');
+    const contentLynch = document.getElementById('content-lynch');
+
+    tabOneil?.addEventListener('click', () => {
+        tabOneil.classList.add('active');
+        tabLynch.classList.remove('active');
+        contentOneil.classList.remove('hidden');
+        contentLynch.classList.add('hidden');
+    });
+
+    tabLynch?.addEventListener('click', () => {
+        tabLynch.classList.add('active');
+        tabOneil.classList.remove('active');
+        contentLynch.classList.remove('hidden');
+        contentOneil.classList.add('hidden');
+    });
+
+    const canslimData = [
+        { letter: 'C', title: 'Current Earnings', detail: 'Demands a significant year-over-year increase in current quarterly EPS, ideally >25%. Acceleration of growth is a powerful bullish signal.' },
+        { letter: 'A', title: 'Annual Growth', detail: 'Requires a strong track record of annual EPS growth (>25%) for the last 3-5 years, supported by a high Return on Equity (>17%).' },
+        { letter: 'N', title: 'New Things', detail: 'Looks for a catalyst: a new product, new management, or the stock breaking out to a new 52-week high from a proper chart base.' },
+        { letter: 'S', title: 'Supply & Demand', detail: 'Focuses on stocks with a limited supply of shares. A surge in demand (high volume) at a breakout point is a key buy signal.' },
+        { letter: 'L', title: 'Leader', detail: 'Invest only in market leaders, not laggards. Seeks stocks with a Relative Strength (RS) Rating of 80 or higher.' },
+        { letter: 'I', title: 'Institutional Sponsorship', detail: 'Requires sponsorship by top-performing institutions as validation, but not so much that the stock is overly-owned.' },
+        { letter: 'M', title: 'Market Direction', detail: 'Asserts that 3 out of 4 stocks follow the market. It dictates buying only in a confirmed market uptrend.' }
+    ];
+
+    const canslimGrid = document.getElementById('canslim-grid');
+    const canslimDetail = document.getElementById('canslim-detail');
+    let activeCanslimCard = null;
+
+    canslimData.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'p-4 bg-stone-100 rounded-lg cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors';
+        card.innerHTML = `<div class="text-2xl font-black">${item.letter}</div><div class="text-xs">${item.title}</div>`;
+        card.addEventListener('click', () => {
+            if (activeCanslimCard) {
+                activeCanslimCard.classList.remove('bg-indigo-600', 'text-white');
+                activeCanslimCard.classList.add('bg-stone-100');
+            }
+            card.classList.add('bg-indigo-600', 'text-white');
+            card.classList.remove('bg-stone-100');
+            activeCanslimCard = card;
+            canslimDetail.innerHTML = `<p class="text-stone-800">${item.detail}</p>`;
+        });
+        canslimGrid?.appendChild(card);
+    });
+    
+    const lynchCategories = [
+        { name: 'Slow Growers', detail: 'Large, mature companies growing 2-5% annually. Primarily for dividends.', group: 'stability' },
+        { name: 'Stalwarts', detail: 'Large, stable companies growing 10-12%. Provide protection in recessions.', group: 'stability' },
+        { name: 'Fast Growers', detail: 'Small, aggressive firms growing >20%. The source of "tenbaggers" and highest risk/reward.', group: 'high-growth' },
+        { name: 'Cyclicals', detail: 'Profits ebb and flow with the economy (e.g., autos, airlines). Timing is everything.', group: 'special-sits' },
+        { name: 'Turnarounds', detail: 'Beaten-down companies with recovery potential. High risk, high reward.', group: 'high-growth' },
+        { name: 'Asset Plays', detail: 'Companies with valuable hidden assets (cash, real estate) overlooked by the market.', group: 'special-sits' }
+    ];
+
+    const lynchGrid = document.getElementById('lynch-categories-grid');
+    lynchCategories.forEach(cat => {
+        const card = document.createElement('div');
+        card.className = 'category-card bg-stone-50 rounded-lg shadow p-4 border-l-4 border-stone-300';
+        card.dataset.group = cat.group;
+        card.innerHTML = `<h4 class="font-bold text-stone-800">${cat.name}</h4><p class="text-sm text-stone-600 mt-1">${cat.detail}</p>`;
+        lynchGrid?.appendChild(card);
+    });
+
+    const filterBtns = document.querySelectorAll('.category-filter-btn');
+    const categoryCards = document.querySelectorAll('.category-card');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active', 'bg-indigo-100', 'text-indigo-700'));
+            btn.classList.add('active', 'bg-indigo-100', 'text-indigo-700');
+            const filter = btn.dataset.filter;
+            categoryCards.forEach(card => {
+                if (filter === 'all' || card.dataset.group === filter) {
+                    card.classList.remove('inactive');
+                } else {
+                    card.classList.add('inactive');
+                }
+            });
+        });
+    });
+
+    const strategySteps = [
+        {
+            title: 'Idea Generation',
+            subtitle: 'The Lynch/Fisher Foundation',
+            content: `<p class="mb-4">The process begins in the real world, not with a stock screener. Embrace the philosophies of Peter Lynch and Philip Fisher to find potential investments.</p>
+                      <ul class="space-y-3 list-disc list-inside text-stone-600">
+                        <li><b>Invest in What You Know:</b> Observe your own environment. What products do you love? What services make your life easier? List the public companies behind these successes.</li>
+                        <li><b>Execute "Scuttlebutt":</b> Become a detective. Read customer reviews, check employee feedback (e.g., on Glassdoor), and talk to people who use the product. Develop the qualitative "story".</li>
+                      </ul>`
+        },
+        {
+            title: 'Categorization & Triage',
+            subtitle: 'The Lynch Framework',
+            content: `<p class="mb-4">Apply Lynch's six-category framework to your list of ideas. This critical triage process sets your expectations and clarifies the analytical path. For our goal of "big earnings," we will focus on two key categories.</p>
+                      <div class="flex gap-4 mt-4">
+                        <div class="flex-1 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+                          <h4 class="font-bold">Fast Growers</h4>
+                          <p class="text-sm">The primary source of potential "tenbaggers."</p>
+                        </div>
+                        <div class="flex-1 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                          <h4 class="font-bold">High-Quality Stalwarts</h4>
+                          <p class="text-sm">Reliable growers that can still provide substantial returns.</p>
+                        </div>
+                      </div>`
+        },
+        {
+            title: 'Rigorous Vetting',
+            subtitle: 'The O\'Neil Filter',
+            content: `<p class="mb-4">This is where art meets science. Subject your curated list to the demanding quantitative criteria of CAN SLIM. This ensures the compelling story is backed by the statistical DNA of a true winner.</p>
+                      <ul class="space-y-3 list-disc list-inside text-stone-600">
+                        <li><b>Apply 'C' and 'A':</b> Check for strong Current & Annual earnings growth. This confirms the story is translating into tangible financial results.</li>
+                        <li><b>Apply 'L' and 'I':</b> Verify the company is a Leader (high RS Rating) with quality Institutional Sponsorship. This confirms the market recognizes its strength.</li>
+                      </ul>`
+        },
+        {
+            title: 'Entry, Exit & Risk',
+            subtitle: 'The Final Decision',
+            content: `<p class="mb-4">This final step requires you to choose an identity based on the "Trader vs. Owner" dichotomy. Your choice dictates the rules for buying, selling, and managing risk.</p>
+                     <div id="path-selection" class="space-y-3">
+                        <button class="path-btn w-full text-left p-3 border rounded-lg hover:bg-stone-50" data-path="owner"><b>Path A: The Owner (Lynch):</b> Buy based on reasonable valuation (PEG ratio). Sell only when the fundamental story deteriorates.</button>
+                        <button class="path-btn w-full text-left p-3 border rounded-lg hover:bg-stone-50" data-path="trader"><b>Path B: The Trader (O'Neil):</b> Buy on a technical breakout in a market uptrend. Sell immediately on a 7-8% loss.</button>
+                        <button class="path-btn w-full text-left p-3 border rounded-lg hover:bg-stone-50" data-path="hybrid"><b>Path C: The Hybrid:</b> Buy based on valuation, but be more aggressive in market uptrends. Use technical breakdowns to trigger a fundamental re-evaluation.</button>
+                     </div>
+                     <div id="path-detail" class="mt-4 p-4 bg-indigo-50 rounded-lg hidden"></div>`
+        }
+    ];
+
+    const stepNav = document.getElementById('step-navigation');
+    const stepContent = document.getElementById('step-content');
+    const prevBtn = document.getElementById('prev-step-btn');
+    const nextBtn = document.getElementById('next-step-btn');
+    let currentStep = 0;
+
+    function renderForge() {
+        if (!stepNav || !stepContent || !prevBtn || !nextBtn) return;
+        stepNav.innerHTML = '';
+        strategySteps.forEach((step, index) => {
+            const stepCard = document.createElement('div');
+            stepCard.className = 'step-card border-l-4 p-3 cursor-pointer';
+            stepCard.innerHTML = `<h4 class="font-bold">${step.title}</h4><p class="text-sm text-stone-500">${step.subtitle}</p>`;
+            if (index === currentStep) {
+                stepCard.classList.add('active', 'border-indigo-600');
+            } else {
+                stepCard.classList.add('border-stone-200');
+            }
+            stepCard.addEventListener('click', () => {
+                currentStep = index;
+                renderForge();
+            });
+            stepNav.appendChild(stepCard);
+        });
+
+        stepContent.style.opacity = 0;
+        stepContent.style.transform = 'translateY(10px)';
+
+        setTimeout(() => {
+            stepContent.innerHTML = `<h3 class="text-2xl font-bold mb-1">${strategySteps[currentStep].title}</h3>
+                                     <p class="text-md text-stone-500 mb-6">${strategySteps[currentStep].subtitle}</p>
+                                     <div class="prose prose-stone max-w-none">${strategySteps[currentStep].content}</div>`;
+            stepContent.style.opacity = 1;
+            stepContent.style.transform = 'translateY(0)';
+            
+            if (currentStep === 3) {
+                addPathButtonListeners();
+            }
+        }, 300);
+
+        prevBtn.disabled = currentStep === 0;
+        nextBtn.disabled = currentStep === strategySteps.length - 1;
+    }
+
+    function addPathButtonListeners() {
+        const pathDetails = {
+            owner: "You are a long-term business owner. Your focus is the enduring quality of the company and its story. Short-term price swings are noise.",
+            trader: "You are a disciplined momentum trader. Your focus is price action and strict risk control. You rent stocks, you don't own them.",
+            hybrid: "You are a disciplined owner. You use fundamentals to buy and hold, but respect technicals and market conditions to manage risk and deploy capital effectively."
+        };
+        document.querySelectorAll('.path-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const detailEl = document.getElementById('path-detail');
+                detailEl.innerHTML = `<p class="font-semibold text-indigo-800">${pathDetails[btn.dataset.path]}</p>`;
+                detailEl.classList.remove('hidden');
+            });
+        });
+    }
+
+    prevBtn?.addEventListener('click', () => {
+        if (currentStep > 0) {
+            currentStep--;
+            renderForge();
+        }
+    });
+
+    nextBtn?.addEventListener('click', () => {
+        if (currentStep < strategySteps.length - 1) {
+            currentStep++;
+            renderForge();
+        }
+    });
+
+    renderForge();
+
+});
+</script>
+
+</body>
+</html>

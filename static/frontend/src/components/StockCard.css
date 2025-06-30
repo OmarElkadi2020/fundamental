@@ -1,0 +1,27 @@
+.stock-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.stock-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.stock-card h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.stock-card p {
+  color: #666;
+}
+
+.metrics-summary {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}

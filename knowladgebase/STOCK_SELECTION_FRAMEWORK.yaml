@@ -1,0 +1,249 @@
+# STOCK SELECTION FRAMEWORK v1.0
+# This document codifies a hybrid investment strategy, synthesizing the methodologies
+# of Peter Lynch and William J. O'Neil for identifying, vetting, and managing
+# high-growth stock investments.
+
+# --- Top-Level Metadata ---
+apiVersion: selection.framework/v1
+kind: StockSelectionFramework
+
+# --- Metadata ---
+metadata:
+  name: "hybrid-growth-stock-selection-2025"
+  description: "A unified framework for selecting stocks with the potential for high earnings, combining qualitative story-driven analysis with rigorous quantitative vetting."
+  owner: "Retail Investor"
+  creationTimestamp: "2025-06-29T09:34:00Z"
+
+# --- Specification (spec) ---
+spec:
+  # --- Shared Resources ---
+  stakeholders:
+    - id: "investor"
+      name: "Primary Investor"
+      role: "Decision-Maker, Researcher, Analyst"
+    - id: "automation_bot"
+      name: "Screening & Analysis Bot"
+      role: "Automated Task Executor"
+
+  criteria_definitions:
+    # --- Lynch's Qualitative & Valuation Criteria ---
+    - id: "compelling_story"
+      name: "Compelling Qualitative Story"
+      category: "Lynch/Fisher"
+      description: "A clear, understandable narrative for why the company is a compelling investment, discovered via 'Scuttlebutt' method." [1]
+      metric_type: "qualitative"
+      weight: 0 # Foundational, not scored
+    - id: "stock_category"
+      name: "Lynch Stock Category"
+      category: "Lynch/Fisher"
+      description: "Classification of the stock into one of six categories: Slow Grower, Stalwart, Fast Grower, Cyclical, Turnaround, or Asset Play." [1]
+      metric_type: "classification"
+      weight: 0 # Foundational, not scored
+    - id: "peg_ratio"
+      name: "Price/Earnings to Growth (PEG) Ratio"
+      category: "Lynch/Fisher"
+      description: "P/E ratio relative to earnings growth rate. Ideal is <= 1.0. Fairly priced at 1.0. Poor prospect if > 2.0." [1]
+      metric_type: "ratio"
+      weight: 20
+    - id: "balance_sheet_strength"
+      name: "Balance Sheet Strength"
+      category: "Lynch/Fisher"
+      description: "Preference for strong balance sheets with little to no bank debt; a substantial net cash position is a major plus." [1]
+      metric_type: "qualitative"
+      weight: 15
+    - id: "insider_activity"
+      name: "Insider Buying & Share Buybacks"
+      category: "Lynch/Fisher"
+      description: "Positive signal when insiders are buying or the company is buying back its own shares." [1]
+      metric_type: "boolean"
+      weight: 5
+
+    # --- O'Neil's CAN SLIM Quantitative Criteria ---
+    - id: "current_quarterly_eps"
+      name: "C - Current Quarterly EPS Growth"
+      category: "O'Neil/CANSLIM"
+      description: "Year-over-year quarterly EPS growth. Minimum 18-20%, ideally 25%+. Must be supported by sales growth of >=25%." [1]
+      metric_type: "percentage"
+      weight: 25
+    - id: "annual_eps"
+      name: "A - Annual EPS Growth & ROE"
+      category: "O'Neil/CANSLIM"
+      description: "Annual EPS growth of >=25% over the last 3-5 years, with a Return on Equity (ROE) of at least 17%." [1]
+      metric_type: "percentage"
+      weight: 20
+    - id: "new_highs"
+      name: "N - New Highs"
+      category: "O'Neil/CANSLIM"
+      description: "Stock is breaking out to a new 52-week high from a sound chart base." [1]
+      metric_type: "technical_event"
+      weight: 5
+    - id: "supply_demand"
+      name: "S - Supply and Demand"
+      category: "O'Neil/CANSLIM"
+      description: "Breakout occurs on trading volume >=50% above average. Smaller share count is a plus." [1]
+      metric_type: "volume_analysis"
+      weight: 5
+    - id: "relative_strength"
+      name: "L - Leader (Relative Strength)"
+      category: "O'Neil/CANSLIM"
+      description: "Stock is a leader in its industry with a Relative Strength (RS) Rating of 80 or higher." [1]
+      metric_type: "rating_1_to_99"
+      weight: 10
+    - id: "institutional_sponsorship"
+      name: "I - Institutional Sponsorship"
+      category: "O'Neil/CANSLIM"
+      description: "Increasing number of high-quality institutional owners, but not yet oversaturated." [1]
+      metric_type: "qualitative"
+      weight: 5
+    - id: "market_direction"
+      name: "M - Market Direction"
+      category: "O'Neil/CANSLIM"
+      description: "Overall market is in a confirmed uptrend, determined by studying major indexes." [1]
+      metric_type: "market_analysis"
+      weight: 0 # A gate, not a score
+
+  # --- Phases ---
+  # The selection process is broken down into a sequence of phases.
+  phases:
+    # --- PHASE 1: IDEA GENERATION (Lynch/Fisher Foundation) ---
+    - name: "Phase 1: Idea Generation"
+      id: "phase_idea_generation"
+      goal: "Build an initial list of potential investment ideas based on real-world observation and qualitative research." [1]
+      steps:
+        - name: "Apply 'Invest in What You Know' Principle"
+          id: "step_1_1"
+          type: "manual_task"
+          description: "Observe your own environment (work, life, community) to identify successful products, services, and expanding businesses. Create a list of the public companies responsible." [1]
+          handler_ref: "investor"
+          outputs: ["Initial List of Companies"]
+        - name: "Execute 'Scuttlebutt' Method"
+          id: "step_1_2"
+          type: "manual_task"
+          description: "For each company, conduct investigative research. Read customer reviews, check employee feedback (e.g., Glassdoor), and talk to users to develop a deep, qualitative 'story' for each potential investment." [1]
+          handler_ref: "investor"
+          inputs: ["Initial List of Companies"]
+          outputs:
+
+    # --- PHASE 2: CATEGORIZATION & TRIAGE (Lynch Framework) ---
+    - name: "Phase 2: Categorization & Triage"
+      id: "phase_categorization"
+      goal: "Classify potential investments to set expectations and define the analytical path, focusing on high-growth candidates." [1]
+      steps:
+        - name: "Assign Each Stock a Lynch Category"
+          id: "step_2_1"
+          type: "manual_task"
+          description: "Categorize each company as a Slow Grower, Stalwart, Fast Grower, Cyclical, Turnaround, or Asset Play." [1]
+          handler_ref: "investor"
+          inputs:
+          outputs: ["Categorized Company List"]
+        - name: "Triage for High-Growth Potential"
+          id: "step_2_2"
+          type: "manual_task"
+          description: "Filter the list to focus on companies categorized as 'Fast Growers' and 'high-quality Stalwarts' for the next phase of rigorous vetting." [1]
+          handler_ref: "investor"
+          inputs: ["Categorized Company List"]
+          outputs:
+
+    # --- PHASE 3: RIGOROUS VETTING (O'Neil Filter) ---
+    - name: "Phase 3: Rigorous Vetting"
+      id: "phase_vetting"
+      goal: "Subject the shortlist to demanding quantitative criteria to ensure the qualitative story is backed by the statistical DNA of a market winner." [1]
+      steps:
+        - name: "Run CAN SLIM Financial Screen"
+          id: "step_3_1"
+          type: "automated_script"
+          description: "Apply the 'C' and 'A' criteria. Screen for strong quarterly and annual EPS growth, sales growth, and high ROE." [1]
+          handler_ref: "automation_bot"
+          run: "python./scripts/can_slim_screener.py --criteria C A --input ${{ inputs.shortlist }}"
+          criteria_refs: ["current_quarterly_eps", "annual_eps"]
+        - name: "Run CAN SLIM Market Screen"
+          id: "step_3_2"
+          type: "automated_script"
+          description: "Apply the 'L' and 'I' criteria. Verify the company is an industry leader (high RS Rating) and has quality, but not excessive, institutional sponsorship." [1]
+          handler_ref: "automation_bot"
+          run: "python./scripts/can_slim_screener.py --criteria L I --input ${{ inputs.shortlist }}"
+          criteria_refs: ["relative_strength", "institutional_sponsorship"]
+        - name: "Final Vetted List Review"
+          id: "step_3_3"
+          type: "evaluation"
+          description: "Review the final list of stocks that passed all filters. These are the candidates for investment." [1]
+          handler_ref: "investor"
+          outputs: ["Final Vetted Candidate List"]
+
+    # --- PHASE 4: EXECUTION STRATEGY SELECTION ---
+    - name: "Phase 4: Execution Strategy Selection"
+      id: "phase_strategy_selection"
+      goal: "Consciously select an execution path based on investment identity (Owner vs. Trader)." [1]
+      steps:
+        - name: "Choose Execution Path"
+          id: "step_4_1"
+          type: "manual_task"
+          description: "Select one of the three execution paths (A: The Owner, B: The Trader, C: The Hybrid) to dictate the rules for entry, exit, and risk management." [1]
+          handler_ref: "investor"
+          outputs:
+
+    # --- PHASE 5A: EXECUTION PATH A (The Owner) ---
+    - name: "Phase 5A: Execution Path A - The Owner"
+      id: "path_a_owner"
+      goal: "Execute a long-term, fundamentals-driven investment strategy." [1]
+      if: "execution_path == 'A'"
+      steps:
+        - name: "Buy at a Reasonable Valuation"
+          id: "step_5A_1"
+          type: "trade_execution"
+          description: "Initiate a position based on Lynch's valuation principles, using the PEG ratio (ideally <= 1.0) as a guide." [1]
+          handler_ref: "investor"
+          criteria_refs: ["peg_ratio"]
+        - name: "Periodic Fundamental Review"
+          id: "step_5A_2"
+          type: "monitoring"
+          description: "On a regular basis (e.g., quarterly), conduct a disciplined review of the company's fundamentals to ensure the original story has not deteriorated. Sell only if the story breaks." [1]
+          handler_ref: "investor"
+
+    # --- PHASE 5B: EXECUTION PATH B (The Trader) ---
+    - name: "Phase 5B: Execution Path B - The Trader"
+      id: "path_b_trader"
+      goal: "Execute a momentum-driven, technical trading strategy." [1]
+      if: "execution_path == 'B'"
+      steps:
+        - name: "Confirm Market Uptrend"
+          id: "step_5B_1"
+          type: "market_analysis"
+          description: "Verify the overall market is in a 'confirmed uptrend' before committing capital." [1]
+          handler_ref: "investor"
+          criteria_refs: ["market_direction"]
+        - name: "Buy on Technical Breakout"
+          id: "step_5B_2"
+          type: "trade_execution"
+          description: "Buy the stock precisely as it breaks out of a sound technical base (N) on high volume (S)." [1]
+          handler_ref: "investor"
+          criteria_refs: ["new_highs", "supply_demand"]
+        - name: "Set Hard Stop-Loss"
+          id: "step_5B_3"
+          type: "risk_management"
+          description: "Immediately place a sell order 7-8% below the purchase price. This is an absolute, non-negotiable rule." [1]
+          handler_ref: "investor"
+
+    # --- PHASE 5C: EXECUTION PATH C (The Disciplined Owner) ---
+    - name: "Phase 5C: Execution Path C - The Hybrid"
+      id: "path_c_hybrid"
+      goal: "Execute a blended strategy combining long-term ownership with tactical, market-aware capital allocation." [1]
+      if: "execution_path == 'C'"
+      steps:
+        - name: "Initiate Position on Valuation"
+          id: "step_5C_1"
+          type: "trade_execution"
+          description: "Buy an initial position based on Lynch's valuation principles (PEG ratio)." [1]
+          handler_ref: "investor"
+          criteria_refs: ["peg_ratio"]
+        - name: "Add Capital During Uptrends"
+          id: "step_5C_2"
+          type: "trade_execution"
+          description: "Only add significantly to the position during a confirmed market uptrend (M)." [1]
+          handler_ref: "investor"
+          criteria_refs: ["market_direction"]
+        - name: "Set 'Mental Stop-Loss'"
+          id: "step_5C_3"
+          type: "risk_management"
+          description: "Use a significant technical breakdown (e.g., close below 200-day moving average) as a trigger for an immediate, rigorous re-evaluation of the fundamental story." [1]
+          handler_ref: "investor"
