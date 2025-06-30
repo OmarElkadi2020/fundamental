@@ -1,5 +1,9 @@
 import React from 'react';
 import { Card, CardContent, Typography, Checkbox, FormControlLabel, Button, Box } from '@mui/material';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 const Step = ({ step, onToggleCache, onViewData, isClickable }) => {
   const { id, name, status, useCache } = step;
@@ -23,10 +27,20 @@ const Step = ({ step, onToggleCache, onViewData, isClickable }) => {
     failed: 'error.main'
   };
 
+  const statusIcons = {
+    pending: <HourglassEmptyIcon color="disabled" />,
+    running: <AutorenewIcon color="warning" />,
+    completed: <CheckCircleOutlineIcon color="success" />,
+    failed: <ErrorOutlineIcon color="error" />,
+  };
+
   return (
     <Card sx={{ borderLeft: 4, borderColor: borderColors[status] || 'grey.300' }}>
       <CardContent>
-        <Typography variant="h6">{name}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {statusIcons[status]}
+          <Typography variant="h6" sx={{ ml: 1 }}>{name}</Typography>
+        </Box>
         <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FormControlLabel
             control={
