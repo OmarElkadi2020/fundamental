@@ -1,5 +1,40 @@
 import yfinance as yf
+import os
+import json
+from datetime import datetime, timedelta
 from ..entities.models import Company
+from backend.logger import logger
+
+YFINANCE_CACHE_DIR = "./data/cache/yfinance_data"
+CACHE_DURATION_HOURS = 24 # Cache data for 24 hours
+
+def _get_cache_file_path(ticker: str) -> str:
+    os.makedirs(YFINANCE_CACHE_DIR, exist_ok=True)
+    return os.path.join(YFINANCE_CACHE_DIR, f"{ticker.upper()}.json")
+
+def _read_yfinance_cache(ticker: str) -> dict | None:
+    file_path = _get_cache_file_path(ticker)
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r") as f:
+                data = json.load(f)
+            timestamp = datetime.fromisoformat(data["timestamp"])
+            if datetime.now() - timestamp < timedelta(hours=CACHE_DURATION_HOURS):
+                logger.info(f"Returning cached Yahoo Finance data for {ticker}")
+                return data["data"]
+            else:
+                logger.info(f"Cached Yahoo Finance data for {ticker} is expired.")
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            logger.warning(f"Error reading or parsing cache for {ticker}: {e}")
+        # If there's an error or cache is expired, delete it to force fresh fetch
+        os.remove(file_path)
+    return None
+
+def _write_yfinance_cache(ticker: str, data: dict):
+    file_path = _get_cache_file_path(ticker)
+    with open(file_path, "w") as f:
+        json.dump({"timestamp": datetime.now().isoformat(), "data": data}, f, indent=4)
+    logger.info(f"Cached Yahoo Finance data for {ticker}")
 
 class YahooFinanceRepository:
     def get_ticker(self, ticker: str):
@@ -15,13 +50,19 @@ class YahooFinanceRepository:
         )
 
     def get_all_data(self, ticker: str):
+        # Try to read from cache first
+        cached_data = _read_yfinance_cache(ticker)
+        if cached_data:
+            return cached_data
+
+        # If not in cache or expired, fetch from yfinance
         ticker_obj = self.get_ticker(ticker)
         info = ticker_obj.info
         if not info:
-            print(f"WARNING: No information found for ticker {ticker_obj.ticker}")
+            logger.warning(f"No information found for ticker {ticker_obj.ticker}")
             return None
 
-        return {
+        data = {
             "info": info,
             "financials": ticker_obj.financials.to_json(),
             "balance_sheet": ticker_obj.balance_sheet.to_json(),
@@ -32,3 +73,5 @@ class YahooFinanceRepository:
             "market_cap": info.get("marketCap"),
             "trailing_pe": info.get("trailingPE"),
         }
+        _write_yfinance_cache(ticker, data)
+        return data

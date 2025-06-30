@@ -294,13 +294,16 @@ const Dashboard = () => {
   const handleStockClick = async (stock) => {
     setSelectedStock(null); // Clear previous selection
     try {
-      // Fetch yfinance data
-      const yfinanceResponse = await fetch(`/api/yfinance/${stock.ticker}`);
+      // Fetch all data in parallel
+      const [yfinanceResponse, vettingResponse, sentimentResponse] = await Promise.all([
+        fetch(`/api/yfinance/${stock.ticker}`),
+        fetch(`/api/stock/${stock.ticker}/vetting_results`),
+        fetch(`/api/stock/${stock.ticker}/sentiment_analysis`)
+      ]);
+
       if (!yfinanceResponse.ok) throw new Error(`HTTP error! status: ${yfinanceResponse.status} for yfinance data`);
       const yfinanceData = await yfinanceResponse.json();
 
-      // Fetch vetting results
-      const vettingResponse = await fetch(`/api/stock/${stock.ticker}/vetting_results`);
       let vettingResults = {};
       if (vettingResponse.ok) {
         vettingResults = await vettingResponse.json();
@@ -308,13 +311,10 @@ const Dashboard = () => {
         console.warn(`Vetting results not found for ${stock.ticker}, status: ${vettingResponse.status}`);
       }
 
-      // Fetch sentiment analysis
-      const sentimentResponse = await fetch(`/api/stock/${stock.ticker}/sentiment_analysis`);
       let sentimentAnalysis = {};
       if (sentimentResponse.ok) {
         sentimentAnalysis = await sentimentResponse.json();
-      }
-      else {
+      } else {
         console.warn(`Sentiment analysis not found for ${stock.ticker}, status: ${sentimentResponse.status}`);
       }
 
