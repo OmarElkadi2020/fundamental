@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Step from './Step';
 import StockCard from './StockCard';
 import StockDetail from './StockDetail';
+import FinalSelectionModal from './FinalSelectionModal';
+import SentimentAnalysisModal from './SentimentAnalysisModal';
+import FastGrowersVettingModal from './FastGrowersVettingModal';
+import TurnaroundsVettingModal from './TurnaroundsVettingModal';
 import './Dashboard.css';
 
 const stepsConfig = [
@@ -18,6 +22,14 @@ const Dashboard = () => {
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [finalStocks, setFinalStocks] = useState([]);
+  const [showFinalSelectionModal, setShowFinalSelectionModal] = useState(false);
+  const [finalSelectionData, setFinalSelectionData] = useState(null);
+  const [showSentimentModal, setShowSentimentModal] = useState(false);
+  const [sentimentData, setSentimentData] = useState(null);
+  const [showFastGrowersVettingModal, setShowFastGrowersVettingModal] = useState(false);
+  const [fastGrowersVettingData, setFastGrowersVettingData] = useState(null);
+  const [showTurnaroundsVettingModal, setShowTurnaroundsVettingModal] = useState(false);
+  const [turnaroundsVettingData, setTurnaroundsVettingData] = useState(null);
 
   const handleToggleCache = (stepId) => {
     if (analysisInProgress) return;
@@ -28,48 +40,66 @@ const Dashboard = () => {
     );
   };
 
-  
-
-  const _parseCategorizationTable = (markdown_content) => {
-    const categorized_stocks = { "Fast Grower": [], "Turnaround": [] };
-    const lines = markdown_content.trim().split('\n');
-    
-    let current_category = null;
-    for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (trimmedLine.startsWith("###")) { // Category header
-            current_category = trimmedLine.replace("###", "").trim();
-        } else if (trimmedLine.startsWith("- ")) { // Ticker line
-            const match = trimmedLine.match(/^- \*\*([A-Z]+)\*\*:.*/);
-            if (match && current_category && categorized_stocks.hasOwnProperty(current_category)) {
-                categorized_stocks[current_category].push(match[1]);
-            }
-        }
+  const _extractJsonFromMarkdown = (markdownContent) => {
+    const jsonMatch = markdownContent.match(/```json\n([\s\S]*?)\n```/);
+    if (jsonMatch && jsonMatch[1]) {
+      return jsonMatch[1];
     }
-    return categorized_stocks;
+    return markdownContent; // Return original if no markdown json block found
   };
 
-  const _parseMarkdownTableWithReasoning = (markdown_table) => {
-    const selected_stocks = [];
-    const lines = markdown_table.trim().split('\n');
-    let header_found = false;
-    for (const line of lines) {
-        if (line.includes('Stock Ticker') && line.includes('|') && line.includes('Reasoning for Final Selection')) {
-            header_found = true;
-            continue;
+  const _parseAiGeneratedIdeas = (aiResponse) => {
+    if (aiResponse.format === 'json') {
+      return aiResponse.content.map(item => item.ticker);
+    } else if (aiResponse.format === 'text') {
+      try {
+        const jsonString = _extractJsonFromMarkdown(aiResponse.content);
+        if (!jsonString.trim()) {
+          console.warn("Extracted JSON string for idea generation is empty.");
+          return [];
         }
-        if (header_found && line.includes('|') && !line.includes('---')) {
-            const parts = line.split('|');
-            if (parts.length > 2) {
-                const ticker = parts[1].trim().replace(/[^a-zA-Z0-9]/g, '').trim();
-                const reasoning = parts[2].trim();
-                if (ticker) {
-                    selected_stocks.push({ ticker, reasoning });
-                }
-            }
-        }
+        const ideas = JSON.parse(jsonString);
+        return ideas.map(item => item.ticker);
+      } catch (e) {
+        console.error(`Error parsing AI generated ideas from text: ${e}`);
+        return [];
+      }
     }
-    return selected_stocks;
+    return [];
+  };
+
+  const _parseCategorizationTable = (aiResponse) => {
+    const categorized_stocks = { "Fast Grower": [], "Turnaround": [] };
+    if (aiResponse.format === 'json') {
+      if (aiResponse.content.fast_growers) {
+        categorized_stocks["Fast Grower"] = aiResponse.content.fast_growers.map(item => item.ticker);
+      }
+      if (aiResponse.content.turnarounds) {
+        categorized_stocks["Turnaround"] = aiResponse.content.turnarounds.map(item => item.ticker);
+      }
+      return categorized_stocks;
+    } else if (aiResponse.format === 'text') {
+      try {
+        const jsonString = _extractJsonFromMarkdown(aiResponse.content);
+        if (!jsonString.trim()) {
+          console.warn("Extracted JSON string for categorization is empty.");
+          return categorized_stocks;
+        }
+        const data = JSON.parse(jsonString);
+
+        if (data.fast_growers) {
+          categorized_stocks["Fast Grower"] = data.fast_growers.map(item => item.ticker);
+        }
+        if (data.turnarounds) {
+          categorized_stocks["Turnaround"] = data.turnarounds.map(item => item.ticker);
+        }
+        return categorized_stocks;
+      } catch (e) {
+        console.error(`Error parsing AI categorization data from text: ${e}`);
+        return categorized_stocks;
+      }
+    }
+    return categorized_stocks;
   };
 
   const startAnalysis = async () => {
@@ -100,23 +130,22 @@ const Dashboard = () => {
               body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { count: 150 } }),
             });
             result = await response.json();
-            ideaGenerationData = result.data.content; // Now it's a JSON array
+            ideaGenerationData = _parseAiGeneratedIdeas(result.data);
             break;
 
           case 'categorization_triage':
             if (!ideaGenerationData) throw new Error('Idea generation data not available.');
-            // ideaGenerationData is now a JSON array of objects, extract tickers
-            const initialTickers = ideaGenerationData.map(item => item.ticker);
+            const initialTickers = ideaGenerationData;
             response = await fetch('/api/run_analysis_step', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { companies_list: initialTickers } }),
             });
             result = await response.json();
-            categorizationTriageData = result.data.content; // Assuming content is the markdown table
-            const { fastGrowers, turnarounds } = _parseCategorizationTable(categorizationTriageData);
-            vettedFastGrowersData = fastGrowers.map(ticker => ({ ticker })); // Prepare for vetting steps
-            vettedTurnaroundsData = turnarounds.map(ticker => ({ ticker })); // Prepare for vetting steps
+            categorizationTriageData = result.data;
+            const { "Fast Grower": fastGrowers, "Turnaround": turnarounds } = _parseCategorizationTable(categorizationTriageData);
+            vettedFastGrowersData = fastGrowers.map(ticker => ({ ticker }));
+            vettedTurnaroundsData = turnarounds.map(ticker => ({ ticker }));
             break;
 
           case 'vetting_fast_growers':
@@ -127,8 +156,24 @@ const Dashboard = () => {
                 body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { fast_growers_data: vettedFastGrowersData } }),
               });
               result = await response.json();
-              // For now, just store the AI response. In a real app, you'd parse this into structured data.
-              vettedFastGrowersData = vettedFastGrowersData.map(stock => ({ ...stock, vetting_result: result.data.content }));
+              let parsedVettingResult;
+              if (result.data.format === 'json') {
+                parsedVettingResult = result.data.content;
+              } else if (result.data.format === 'text') {
+                try {
+                  const jsonString = _extractJsonFromMarkdown(result.data.content);
+                  if (!jsonString.trim()) {
+                    console.warn("Extracted JSON string for fast growers vetting is empty.");
+                    parsedVettingResult = [];
+                  } else {
+                    parsedVettingResult = JSON.parse(jsonString);
+                  }
+                } catch (e) {
+                  console.error("Error parsing fast growers vetting data from text:", e);
+                  parsedVettingResult = [];
+                }
+              }
+              vettedFastGrowersData = parsedVettingResult;
             }
             break;
 
@@ -140,8 +185,24 @@ const Dashboard = () => {
                 body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { turnarounds_data: vettedTurnaroundsData } }),
               });
               result = await response.json();
-              // For now, just store the AI response.
-              vettedTurnaroundsData = vettedTurnaroundsData.map(stock => ({ ...stock, vetting_result: result.data.content }));
+              let parsedVettingResult;
+              if (result.data.format === 'json') {
+                parsedVettingResult = result.data.content;
+              } else if (result.data.format === 'text') {
+                try {
+                  const jsonString = _extractJsonFromMarkdown(result.data.content);
+                  if (!jsonString.trim()) {
+                    console.warn("Extracted JSON string for turnarounds vetting is empty.");
+                    parsedVettingResult = [];
+                  } else {
+                    parsedVettingResult = JSON.parse(jsonString);
+                  }                  
+                } catch (e) {
+                  console.error("Error parsing turnarounds vetting data from text:", e);
+                  parsedVettingResult = [];
+                }
+              }
+              vettedTurnaroundsData = parsedVettingResult;
             }
             break;
 
@@ -154,7 +215,22 @@ const Dashboard = () => {
                 body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { stocks_list: allVettedTickers } }),
               });
               result = await response.json();
-              sentimentAnalysisData = result.data.content; // Assuming content is the markdown table
+              if (result.data.format === 'json') {
+                sentimentAnalysisData = result.data.content;
+              } else if (result.data.format === 'text') {
+                try {
+                  const jsonString = _extractJsonFromMarkdown(result.data.content);
+                  if (!jsonString.trim()) {
+                    console.warn("Extracted JSON string for sentiment analysis is empty.");
+                    sentimentAnalysisData = [];
+                  } else {
+                    sentimentAnalysisData = JSON.parse(jsonString);
+                  }
+                } catch (e) {
+                  console.error("Error parsing sentiment analysis data from text:", e);
+                  sentimentAnalysisData = [];
+                }
+              }
             }
             break;
 
@@ -168,14 +244,29 @@ const Dashboard = () => {
                 payload: {
                   fast_growers_vetted: vettedFastGrowersData,
                   turnarounds_vetted: vettedTurnaroundsData,
-                  sentiment_analysis_results: { content: sentimentAnalysisData }, // Pass the raw markdown for now
+                  sentiment_analysis_results: { content: JSON.stringify(sentimentAnalysisData) },
                 },
               }),
             });
             result = await response.json();
-            const finalSelectionMarkdown = result.data.content;
-            const selectedTickersWithReasoning = _parseMarkdownTableWithReasoning(finalSelectionMarkdown);
-            setFinalStocks(selectedTickersWithReasoning);
+            let finalSelectionParsedData;
+            if (result.data.format === 'json') {
+              finalSelectionParsedData = result.data.content;
+            } else if (result.data.format === 'text') {
+              try {
+                const jsonString = _extractJsonFromMarkdown(result.data.content);
+                if (!jsonString.trim()) {
+                  console.warn("Extracted JSON string for final selection is empty.");
+                  finalSelectionParsedData = [];
+                } else {
+                  finalSelectionParsedData = JSON.parse(jsonString);
+                }
+              } catch (e) {
+                console.error("Error parsing final selection data from text:", e);
+                finalSelectionParsedData = [];
+              }
+            }
+            setFinalStocks(finalSelectionParsedData);
             break;
 
           default:
@@ -200,20 +291,128 @@ const Dashboard = () => {
     setAnalysisInProgress(false);
   };
 
-  const handleStockClick = (stock) => {
-    setSelectedStock(stock);
+  const handleStockClick = async (stock) => {
+    setSelectedStock(null); // Clear previous selection
+    try {
+      // Fetch yfinance data
+      const yfinanceResponse = await fetch(`/api/yfinance/${stock.ticker}`);
+      if (!yfinanceResponse.ok) throw new Error(`HTTP error! status: ${yfinanceResponse.status} for yfinance data`);
+      const yfinanceData = await yfinanceResponse.json();
+
+      // Fetch vetting results
+      const vettingResponse = await fetch(`/api/stock/${stock.ticker}/vetting_results`);
+      let vettingResults = {};
+      if (vettingResponse.ok) {
+        vettingResults = await vettingResponse.json();
+      } else {
+        console.warn(`Vetting results not found for ${stock.ticker}, status: ${vettingResponse.status}`);
+      }
+
+      // Fetch sentiment analysis
+      const sentimentResponse = await fetch(`/api/stock/${stock.ticker}/sentiment_analysis`);
+      let sentimentAnalysis = {};
+      if (sentimentResponse.ok) {
+        sentimentAnalysis = await sentimentResponse.json();
+      }
+      else {
+        console.warn(`Sentiment analysis not found for ${stock.ticker}, status: ${sentimentResponse.status}`);
+      }
+
+      // Combine all data
+      const combinedStockData = {
+        ...stock, // Keep existing data from finalStocks (e.g., category, investment_thesis, vetting_results, sentiment_analysis)
+        ...yfinanceData, // Add/override yfinance data (info, financials, etc.)
+        vetting_results: vettingResults, // Ensure vetting results are explicitly included
+        sentiment_analysis: sentimentAnalysis, // Ensure sentiment analysis is explicitly included
+      };
+
+      setSelectedStock(combinedStockData);
+    } catch (error) {
+      console.error("Error fetching stock details:", error);
+      alert("Failed to load stock details. Please try again.");
+    }
   };
 
   const handleBack = () => {
     setSelectedStock(null);
   };
 
-  const handleViewData = (stepId) => {
+  const handleViewData = async (stepId) => {
     const step = steps.find(s => s.id === stepId);
     if (step && step.data) {
-      console.log(`Data for ${step.name}:`, step.data);
-      alert(`Data for ${step.name}:\n` + JSON.stringify(step.data, null, 2));
+      let displayData = step.data.content;
+      if (step.data.format === 'text') {
+        try {
+          const jsonString = _extractJsonFromMarkdown(step.data.content);
+          if (jsonString.trim()) { // Only parse if not empty
+            displayData = JSON.parse(jsonString);
+          } else {
+            console.warn(`Data for ${step.name} is text and empty after markdown extraction.`);
+            displayData = null; // Set to null or empty array/object as appropriate
+          }
+        } catch (e) {
+          console.warn(`Data for ${step.name} is text and not JSON parsable. Keeping as raw text.`, e);
+          // Keep displayData as raw text if parsing fails
+        }
+      }
+
+      if (stepId === 'final_selection_synthesis') {
+        try {
+          setFinalSelectionData(displayData);
+          setShowFinalSelectionModal(true);
+        } catch (e) {
+          console.error("Error setting final selection data for modal:", e);
+          alert(`Error displaying data for ${step.name}:\n` + e.message);
+        }
+      } else if (stepId === 'sentiment_analysis') {
+        try {
+          setSentimentData(displayData);
+          setShowSentimentModal(true);
+        } catch (e) {
+          console.error("Error setting sentiment analysis data for modal:", e);
+          alert(`Error displaying data for ${step.name}:\n` + e.message);
+        }
+      } else if (stepId === 'vetting_fast_growers') {
+        try {
+          setFastGrowersVettingData(displayData);
+          setShowFastGrowersVettingModal(true);
+        } catch (e) {
+          console.error("Error setting fast growers vetting data for modal:", e);
+          alert(`Error displaying data for ${step.name}:\n` + e.message);
+        }
+      } else if (stepId === 'vetting_turnarounds') {
+        try {
+          setTurnaroundsVettingData(displayData);
+          setShowTurnaroundsVettingModal(true);
+        } catch (e) {
+          console.error("Error setting turnarounds vetting data for modal:", e);
+          alert(`Error displaying data for ${step.name}:\n` + e.message);
+        }
+      } else {
+        console.log(`Data for ${step.name}:`, step.data);
+        alert(`Data for ${step.name}:\n` + JSON.stringify(displayData, null, 2));
+      }
     }
+  };
+
+  const handleCloseFinalSelectionModal = () => {
+    setShowFinalSelectionModal(false);
+    setFinalSelectionData(null);
+  };
+
+  const handleCloseSentimentModal = () => {
+    setShowSentimentModal(false);
+    setSentimentData(null);
+  };
+
+  const handleCloseFastGrowersVettingModal = () => {
+    setShowFastGrowersVettingModal(false);
+    setFastGrowersVettingData(null);
+  };
+
+  const handleCloseTurnaroundsVettingModal = () => {
+    setShowTurnaroundsVettingModal(false);
+    setTurnaroundsVettingData(null);
   };
 
   if (selectedStock) {
@@ -247,6 +446,30 @@ const Dashboard = () => {
             ))}
         </div>
       </div>
+      {showFinalSelectionModal && (
+        <FinalSelectionModal
+          data={finalSelectionData}
+          onClose={handleCloseFinalSelectionModal}
+        />
+      )}
+      {showSentimentModal && (
+        <SentimentAnalysisModal
+          data={sentimentData}
+          onClose={handleCloseSentimentModal}
+        />
+      )}
+      {showFastGrowersVettingModal && (
+        <FastGrowersVettingModal
+          data={fastGrowersVettingData}
+          onClose={handleCloseFastGrowersVettingModal}
+        />
+      )}
+      {showTurnaroundsVettingModal && (
+        <TurnaroundsVettingModal
+          data={turnaroundsVettingData}
+          onClose={handleCloseTurnaroundsVettingModal}
+        />
+      )}
     </div>
   );
 };

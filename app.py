@@ -8,6 +8,7 @@ import os
 import json
 from datetime import datetime
 from contextlib import asynccontextmanager
+import re
 
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -32,12 +33,22 @@ def write_cache(data):
     with open(CACHE_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
+def _extract_json_from_text(text_content: str) -> str:
+    """Extracts a JSON string from a text, handling markdown code blocks."""
+    json_match = re.search(r"```json\n([\s\S]*?)\n```", text_content)
+    if json_match:
+        return json_match.group(1)
+    # If no markdown json block, assume the whole content might be JSON
+    return text_content
+
 from backend.core.use_cases.ai_evaluation_service import AIEvaluationService
+from backend.core.infrastructure.yfinance_repository import YahooFinanceRepository
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up application...")
     app.state.ai_service = AIEvaluationService()
+    app.state.yfinance_repo = YahooFinanceRepository()
     yield
     logger.info("Shutting down application...")
 
@@ -65,6 +76,30 @@ async def read_root(request: Request):
 
 # --- API Endpoints for SPA --- #
 
+@app.get("/api/stock_detail/{ticker}")
+async def get_stock_detail(ticker: str, request: Request):
+    yfinance_repo = request.app.state.yfinance_repo
+    try:
+        data = yfinance_repo.get_all_data(ticker)
+        if data:
+            return JSONResponse(content=data)
+        raise HTTPException(status_code=404, detail=f"Stock data not found for {ticker}")
+    except Exception as e:
+        logger.error(f"Error fetching stock detail for {ticker}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve stock data: {e}")
+
+@app.get("/api/yfinance/{ticker}")
+async def get_yfinance_data(ticker: str, request: Request):
+    yfinance_repo = request.app.state.yfinance_repo
+    try:
+        data = yfinance_repo.get_all_data(ticker)
+        if data:
+            return JSONResponse(content=data)
+        raise HTTPException(status_code=404, detail=f"Yahoo Finance data not found for {ticker}")
+    except Exception as e:
+        logger.error(f"Error fetching Yahoo Finance data for {ticker}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve Yahoo Finance data: {e}")
+
 @app.post("/api/run_analysis_step")
 async def run_analysis_step(request: Request):
     body = await request.json()
@@ -77,7 +112,6 @@ async def run_analysis_step(request: Request):
 
     if use_cache and step in cache:
         cached_data = cache[step]
-        # Optional: Check for age of cache and decide if it's too old
         return {"status": "cached", "step": step, "data": cached_data['data']}
 
     try:
@@ -107,14 +141,30 @@ async def run_analysis_step(request: Request):
                 raise HTTPException(status_code=400, detail="stocks_list is required for sentiment_analysis step.")
             result = ai_service.analyze_sentiment(stocks_list=stocks_list)
         elif step == "final_selection_synthesis":
-            fast_growers_vetted = payload.get("fast_growers_vetted")
-            turnarounds_vetted = payload.get("turnarounds_vetted")
+            fast_growers_vetted_data = cache.get("vetting_fast_growers", {}).get("data", {}).get("content", "[]")
+            turnarounds_vetted_data = cache.get("vetting_turnarounds", {}).get("data", {}).get("content", "[]")
             sentiment_analysis_results = payload.get("sentiment_analysis_results")
-            if not fast_growers_vetted or not turnarounds_vetted or not sentiment_analysis_results:
-                raise HTTPException(status_code=400, detail="All vetting and sentiment results are required for final_selection_synthesis step.")
+
+            try:
+                fast_growers_vetted_data = json.loads(_extract_json_from_text(fast_growers_vetted_data))
+            except json.JSONDecodeError:
+                logger.error("Error parsing fast_growers_vetted_data from cache.")
+                fast_growers_vetted_data = []
+
+            try:
+                turnarounds_vetted_data = json.loads(_extract_json_from_text(turnarounds_vetted_data))
+            except json.JSONDecodeError:
+                logger.error("Error parsing turnarounds_vetted_data from cache.")
+                turnarounds_vetted_data = []
+
+            if not fast_growers_vetted_data and not turnarounds_vetted_data:
+                raise HTTPException(status_code=400, detail="No vetting data available for final synthesis.")
+            if not sentiment_analysis_results:
+                raise HTTPException(status_code=400, detail="Sentiment analysis results are required for final_selection_synthesis step.")
+
             result = ai_service.final_selection_synthesis(
-                fast_growers_vetted=fast_growers_vetted,
-                turnarounds_vetted=turnarounds_vetted,
+                fast_growers_vetted=fast_growers_vetted_data,
+                turnarounds_vetted=turnarounds_vetted_data,
                 sentiment_analysis_results=sentiment_analysis_results
             )
         else:
@@ -140,6 +190,49 @@ async def get_cached_step(step_name: str):
     if step_name in cache:
         return JSONResponse(content=cache[step_name])
     return JSONResponse(content=None, status_code=404)
+
+@app.get("/api/stock/{ticker}/vetting_results")
+async def get_stock_vetting_results(ticker: str):
+    cache = get_cache()
+    fast_growers_vetting = cache.get("vetting_fast_growers", {}).get("data", {}).get("content")
+    turnarounds_vetting = cache.get("vetting_turnarounds", {}).get("data", {}).get("content")
+
+    all_vetting_results = []
+    if fast_growers_vetting:
+        try:
+            json_string = _extract_json_from_text(fast_growers_vetting)
+            all_vetting_results.extend(json.loads(json_string))
+        except json.JSONDecodeError:
+            logger.error("Error decoding fast_growers_vetting from cache.")
+    if turnarounds_vetting:
+        try:
+            json_string = _extract_json_from_text(turnarounds_vetting)
+            all_vetting_results.extend(json.loads(json_string))
+        except json.JSONDecodeError:
+            logger.error("Error decoding turnarounds_vetting from cache.")
+
+    for stock_data in all_vetting_results:
+        if stock_data.get("ticker") == ticker:
+            return JSONResponse(content=stock_data.get("vetting_results"))
+
+    raise HTTPException(status_code=404, detail=f"Vetting results not found for {ticker}")
+
+@app.get("/api/stock/{ticker}/sentiment_analysis")
+async def get_stock_sentiment_analysis(ticker: str):
+    cache = get_cache()
+    sentiment_analysis_data = cache.get("sentiment_analysis", {}).get("data", {}).get("content")
+
+    if sentiment_analysis_data:
+        try:
+            json_string = _extract_json_from_text(sentiment_analysis_data)
+            parsed_sentiment = json.loads(json_string)
+            for item in parsed_sentiment:
+                if item.get("ticker") == ticker:
+                    return JSONResponse(content={"score": item.get("sentiment_score"), "summary": item.get("summary")})
+        except json.JSONDecodeError:
+            logger.error("Error decoding sentiment_analysis_data from cache.")
+
+    raise HTTPException(status_code=404, detail=f"Sentiment analysis not found for {ticker}")
 
 @app.get("/api/get_full_cache")
 async def get_full_cache():
