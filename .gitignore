@@ -208,3 +208,4 @@ __marimo__/
 
 uvicorn.log
 app.log
+knowladgebase/cache/
