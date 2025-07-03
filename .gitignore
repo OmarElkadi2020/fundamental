@@ -209,3 +209,12 @@ __marimo__/
 uvicorn.log
 app.log
 knowladgebase/cache/
+
+# Custom additions
+data/cache/
+temp_llm_ping.py
+check_import.py
+test.py
+test_app.py
+test_gemini.py
+.vscode/
