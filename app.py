@@ -106,56 +106,88 @@ async def run_analysis_step(request: Request):
     step = body.get("step")
     use_cache = body.get("use_cache", True)
     payload = body.get("payload")
-    ai_service = request.app.state.ai_service
+    detail_level = body.get("detail_level", "fast")
+    ai_service: AIEvaluationService = request.app.state.ai_service
 
     cache = get_cache()
 
     if use_cache and step in cache:
-        cached_data = cache[step]
-        return {"status": "cached", "step": step, "data": cached_data['data']}
+        cached_step_data = cache[step]
+        # The 'data' key holds the content from the AI service
+        raw_data = cached_step_data.get("data", {})
+        
+        # The actual content is under the 'content' key
+        content = raw_data.get("content", "")
+        
+        # Ensure content is parsed to a dictionary or list before sending
+        if isinstance(content, str):
+            try:
+                # Extract from markdown and parse
+                parsed_content = json.loads(_extract_json_from_text(content))
+            except json.JSONDecodeError:
+                # If parsing fails, it might be a plain string; send as is
+                logger.warning(f"Could not parse cached content for step '{step}'. Sending raw content.")
+                parsed_content = content
+        else:
+            # If it's already a dict/list, use it directly
+            parsed_content = content
+            
+        # Reconstruct the data object to be sent to the frontend
+        response_data = {
+            "content": parsed_content,
+            "format": "json" if isinstance(parsed_content, (dict, list)) else "text",
+            "model": raw_data.get("model", "cached")
+        }
+        
+        logger.info(f"Returning cached data for step: {step}")
+        return {"status": "cached", "step": step, "data": response_data}
 
     try:
         logger.info(f"Running analysis step: {step} (Use Cache: {use_cache})")
         result = None
         if step == "idea_generation":
             count = payload.get("count", 150)
-            result = ai_service.generate_ideas_scuttlebutt(count=count)
+            result = ai_service.generate_ideas_scuttlebutt(count=count, detail_level=detail_level)
         elif step == "categorization_triage":
             companies_list = payload.get("companies_list")
             if not companies_list:
                 raise HTTPException(status_code=400, detail="companies_list is required for categorization_triage step.")
-            result = ai_service.categorize_and_filter_lynch(companies_list=companies_list)
+            result = ai_service.categorize_and_filter_lynch(companies_list=companies_list, detail_level=detail_level)
         elif step == "vetting_fast_growers":
             fast_growers_data = payload.get("fast_growers_data")
             if not fast_growers_data:
                 raise HTTPException(status_code=400, detail="fast_growers_data is required for vetting_fast_growers step.")
-            result = ai_service.vet_fast_growers(fast_growers_data=fast_growers_data)
+            result = ai_service.vet_fast_growers(fast_growers_data=fast_growers_data, detail_level=detail_level)
         elif step == "vetting_turnarounds":
             turnarounds_data = payload.get("turnarounds_data")
             if not turnarounds_data:
                 raise HTTPException(status_code=400, detail="turnarounds_data is required for vetting_turnarounds step.")
-            result = ai_service.vet_turnarounds(turnarounds_data=turnarounds_data)
+            result = ai_service.vet_turnarounds(turnarounds_data=turnarounds_data, detail_level=detail_level)
         elif step == "sentiment_analysis":
             stocks_list = payload.get("stocks_list")
             if not stocks_list:
                 raise HTTPException(status_code=400, detail="stocks_list is required for sentiment_analysis step.")
-            result = ai_service.analyze_sentiment(stocks_list=stocks_list)
+            result = ai_service.analyze_sentiment(stocks_list=stocks_list, detail_level=detail_level)
         elif step == "final_selection_synthesis":
             fast_growers_vetted_data = cache.get("vetting_fast_growers", {}).get("data", {}).get("content", "[]")
             turnarounds_vetted_data = cache.get("vetting_turnarounds", {}).get("data", {}).get("content", "[]")
             sentiment_analysis_results = payload.get("sentiment_analysis_results")
-
-            try:
-                fast_growers_vetted_data = json.loads(_extract_json_from_text(fast_growers_vetted_data))
-            except json.JSONDecodeError:
-                logger.error("Error parsing fast_growers_vetted_data from cache.")
-                fast_growers_vetted_data = []
-
-            try:
-                turnarounds_vetted_data = json.loads(_extract_json_from_text(turnarounds_vetted_data))
-            except json.JSONDecodeError:
-                logger.error("Error parsing turnarounds_vetted_data from cache.")
-                turnarounds_vetted_data = []
+            
+            if isinstance(fast_growers_vetted_data, str):
+                try:
+                    fast_growers_vetted_data = json.loads(_extract_json_from_text(fast_growers_vetted_data))
+                except json.JSONDecodeError:
+                    logger.error("Error parsing fast_growers_vetted_data from cache.")
+                    fast_growers_vetted_data = []
+            else: logger.warning(f"The fast_growers_vetted_data is not a json string, but {type(fast_growers_vetted_data)}. it will not be converted to json")
+            
+            if isinstance(fast_growers_vetted_data, str):
+                try:
+                    turnarounds_vetted_data = json.loads(_extract_json_from_text(turnarounds_vetted_data))
+                except json.JSONDecodeError:
+                    logger.error("Error parsing turnarounds_vetted_data from cache.")
+                    turnarounds_vetted_data = []
+            else: logger.warning(f"The turnarounds_vetted_data is not a json string, but {type(turnarounds_vetted_data)}. it will not be converted to json")
 
             if not fast_growers_vetted_data and not turnarounds_vetted_data:
                 raise HTTPException(status_code=400, detail="No vetting data available for final synthesis.")
@@ -165,7 +197,8 @@ async def run_analysis_step(request: Request):
             result = ai_service.final_selection_synthesis(
                 fast_growers_vetted=fast_growers_vetted_data,
                 turnarounds_vetted=turnarounds_vetted_data,
-                sentiment_analysis_results=sentiment_analysis_results
+                sentiment_analysis_results=sentiment_analysis_results,
+                detail_level=detail_level
             )
         else:
             logger.warning(f"Unknown analysis step requested: {step}")
@@ -200,14 +233,13 @@ async def get_stock_vetting_results(ticker: str):
     all_vetting_results = []
     if fast_growers_vetting:
         try:
-            json_string = _extract_json_from_text(fast_growers_vetting)
-            all_vetting_results.extend(json.loads(json_string))
+            json_string = json.loads(_extract_json_from_text(fast_growers_vetting)) if isinstance(fast_growers_vetting, str) else fast_growers_vetting
+            all_vetting_results.extend(json_string)
         except json.JSONDecodeError:
             logger.error("Error decoding fast_growers_vetting from cache.")
     if turnarounds_vetting:
         try:
-            json_string = _extract_json_from_text(turnarounds_vetting)
-            all_vetting_results.extend(json.loads(json_string))
+            json_string = json.loads(_extract_json_from_text(turnarounds_vetting)) if isinstance(turnarounds_vetting, str) else turnarounds_vetting
         except json.JSONDecodeError:
             logger.error("Error decoding turnarounds_vetting from cache.")
 
@@ -224,8 +256,7 @@ async def get_stock_sentiment_analysis(ticker: str):
 
     if sentiment_analysis_data:
         try:
-            json_string = _extract_json_from_text(sentiment_analysis_data)
-            parsed_sentiment = json.loads(json_string)
+            parsed_sentiment = json.loads(_extract_json_from_text(sentiment_analysis_data)) if isinstance(sentiment_analysis_data, str) else sentiment_analysis_data
             for item in parsed_sentiment:
                 if item.get("ticker") == ticker:
                     return JSONResponse(content={"score": item.get("sentiment_score"), "summary": item.get("summary")})

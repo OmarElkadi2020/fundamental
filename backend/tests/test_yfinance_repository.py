@@ -3,6 +3,9 @@ import yfinance as yf
 from backend.core.infrastructure.yfinance_repository import YahooFinanceRepository
 from backend.core.entities.models import Company
 
+import pandas as pd
+import io
+
 class TestYahooFinanceRepository(unittest.TestCase):
 
     def setUp(self):
@@ -35,7 +38,14 @@ class TestYahooFinanceRepository(unittest.TestCase):
 
         self.assertIn("history", all_data)
         self.assertIsNotNone(all_data["history"])
-        self.assertFalse(all_data["history"].empty)
+        
+        # Handle cached data being a JSON string
+        if isinstance(all_data["history"], str):
+            history_df = pd.read_json(io.StringIO(all_data["history"]))
+        else:
+            history_df = all_data["history"]
+            
+        self.assertFalse(history_df.empty)
 
         # Check for some specific keys in info to ensure data richness
         self.assertIn("longName", all_data["info"])
