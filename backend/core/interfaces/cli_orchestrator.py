@@ -88,7 +88,7 @@ def run_investment_workflow():
 
     # Step 1: AI-Powered Idea Generation
     print("\nStep 1: Generating 150 stock ideas with AI (Scuttlebutt methodology)...")
-    generated_ideas_response = ai_service.generate_ideas_scuttlebutt(count=150)
+    generated_ideas_response = ai_service.generate_ideas_scuttlebutt(count=150, detail_level="fast")
     generated_ideas_markdown = generated_ideas_response.get("content", "")
     print("AI Generated Ideas:\n", generated_ideas_markdown)
     
