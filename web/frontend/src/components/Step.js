@@ -1,13 +1,13 @@
 import React from 'react';
-import { Box, Typography, Button, Paper, Switch, FormControlLabel, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Paper, Switch, FormControlLabel, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 
-const Step = ({ step, onToggleCache, onViewData, isClickable }) => {
-  const { id, name, status, useCache, data } = step;
+const Step = ({ step, onToggleCache, onViewData, isClickable, onDetailLevelChange }) => {
+  const { id, name, status, useCache, data, detailLevel } = step;
 
   const handleToggle = (e) => {
     e.stopPropagation();
@@ -19,6 +19,13 @@ const Step = ({ step, onToggleCache, onViewData, isClickable }) => {
   const handleView = (e) => {
     e.stopPropagation();
     onViewData(id);
+  };
+
+  const handleDetailLevelChange = (e) => {
+    e.stopPropagation();
+    if (isClickable) {
+      onDetailLevelChange(id, e.target.value);
+    }
   };
 
   const getStatusIcon = (currentStatus) => {
@@ -97,6 +104,21 @@ const Step = ({ step, onToggleCache, onViewData, isClickable }) => {
           label={<Typography variant="body2" sx={{ color: 'text.secondary' }}>Use Cache</Typography>}
         />
       </Box>
+
+      <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
+        <InputLabel id={`detail-level-select-label-${id}`}>Detail Level</InputLabel>
+        <Select
+          labelId={`detail-level-select-label-${id}`}
+          id={`detail-level-select-${id}`}
+          value={detailLevel || 'fast'}
+          label="Detail Level"
+          onChange={handleDetailLevelChange}
+          disabled={!isClickable}
+        >
+          <MenuItem value="fast">Fast</MenuItem>
+          <MenuItem value="detailed">Detailed</MenuItem>
+        </Select>
+      </FormControl>
 
       <Button
         variant="outlined"

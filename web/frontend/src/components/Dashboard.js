@@ -18,7 +18,7 @@ const stepsConfig = [
 ];
 
 const Dashboard = () => {
-  const [steps, setSteps] = useState(stepsConfig.map(step => ({ ...step, status: 'pending', useCache: true, data: null })));
+  const [steps, setSteps] = useState(stepsConfig.map(step => ({ ...step, status: 'pending', useCache: true, data: null, detailLevel: 'fast' })));
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [finalStocks, setFinalStocks] = useState([]);
@@ -40,30 +40,104 @@ const Dashboard = () => {
     );
   };
 
-  const _extractJsonFromMarkdown = (markdownContent) => {
-    const jsonMatch = markdownContent.match(/```json\n([\s\S]*?)\n```/);
-    if (jsonMatch && jsonMatch[1]) {
-      return jsonMatch[1];
-    }
-    return markdownContent; // Return original if no markdown json block found
+  const handleDetailLevelChange = (stepId, newDetailLevel) => {
+    if (analysisInProgress) return;
+    setSteps(prevSteps =>
+      prevSteps.map(step =>
+        step.id === stepId ? { ...step, detailLevel: newDetailLevel } : step
+      )
+    );
   };
+
+  const _parseAndCleanJson = (text) => {
+    const match = text.match(/```json\n([\s\S]*?)\n```/);
+    let jsonString = match ? match[1] : text;
+
+    try {
+        return JSON.parse(jsonString);
+    } catch (e) {
+        console.warn("Initial JSON parsing failed, attempting to find last valid object.", e);
+        
+        // Attempt to find the last complete JSON object in the array
+        try {
+            let lastValidIndex = jsonString.lastIndexOf('}');
+            if (lastValidIndex !== -1) {
+                // Ensure we capture the full object by finding the corresponding opening bracket
+                let openBrackets = 0;
+                let firstBracketIndex = -1;
+                for (let i = lastValidIndex; i >= 0; i--) {
+                    if (jsonString[i] === '}') openBrackets++;
+                    if (jsonString[i] === '{') {
+                        openBrackets--;
+                        if (openBrackets === 0) {
+                            firstBracketIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (firstBracketIndex !== -1) {
+                    // We have a complete object, let's try to find all complete objects
+                    const objects = [];
+                    let remainingString = jsonString;
+                    while (true) {
+                        const start = remainingString.indexOf('{');
+                        if (start === -1) break;
+                        
+                        let openBrackets = 0;
+                        let end = -1;
+                        for (let i = start; i < remainingString.length; i++) {
+                            if (remainingString[i] === '{') openBrackets++;
+                            if (remainingString[i] === '}') {
+                                openBrackets--;
+                                if (openBrackets === 0) {
+                                    end = i + 1;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (end !== -1) {
+                            try {
+                                objects.push(JSON.parse(remainingString.substring(start, end)));
+                                remainingString = remainingString.substring(end);
+                            } catch (parseError) {
+                                // This object is malformed, let's skip it
+                                remainingString = remainingString.substring(start + 1);
+                            }
+                        } else {
+                            // No complete object found
+                            break;
+                        }
+                    }
+                    
+                    if (objects.length > 0) {
+                        console.log(`Successfully parsed ${objects.length} objects from the truncated string.`);
+                        return objects;
+                    }
+                }
+            }
+        } catch (cleanError) {
+            console.error("Failed to parse JSON even after cleaning:", cleanError);
+            console.error("Problematic JSON string:", jsonString);
+            return null;
+        }
+        
+        console.error("Could not recover any JSON from the string.");
+        return null;
+    }
+};
 
   const _parseAiGeneratedIdeas = (aiResponse) => {
     if (aiResponse.format === 'json') {
       return aiResponse.content.map(item => item.ticker);
     } else if (aiResponse.format === 'text') {
-      try {
-        const jsonString = _extractJsonFromMarkdown(aiResponse.content);
-        if (!jsonString.trim()) {
-          console.warn("Extracted JSON string for idea generation is empty.");
-          return [];
-        }
-        const ideas = JSON.parse(jsonString);
+      const ideas = _parseAndCleanJson(aiResponse.content);
+      if (ideas && Array.isArray(ideas)) {
         return ideas.map(item => item.ticker);
-      } catch (e) {
-        console.error(`Error parsing AI generated ideas from text: ${e}`);
-        return [];
       }
+      console.warn("Parsed AI generated ideas are not a valid array or null.");
+      return [];
     }
     return [];
   };
@@ -79,25 +153,16 @@ const Dashboard = () => {
       }
       return categorized_stocks;
     } else if (aiResponse.format === 'text') {
-      try {
-        const jsonString = _extractJsonFromMarkdown(aiResponse.content);
-        if (!jsonString.trim()) {
-          console.warn("Extracted JSON string for categorization is empty.");
-          return categorized_stocks;
-        }
-        const data = JSON.parse(jsonString);
-
+      const data = _parseAndCleanJson(aiResponse.content);
+      if (data) {
         if (data.fast_growers) {
           categorized_stocks["Fast Grower"] = data.fast_growers.map(item => item.ticker);
         }
         if (data.turnarounds) {
           categorized_stocks["Turnaround"] = data.turnarounds.map(item => item.ticker);
         }
-        return categorized_stocks;
-      } catch (e) {
-        console.error(`Error parsing AI categorization data from text: ${e}`);
-        return categorized_stocks;
       }
+      return categorized_stocks;
     }
     return categorized_stocks;
   };
@@ -127,8 +192,12 @@ const Dashboard = () => {
             response = await fetch('/api/run_analysis_step', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { count: 150 } }),
+              body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { count: 150 }, detail_level: step.detailLevel }),
             });
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(errorText || 'Idea generation step failed');
+            }
             result = await response.json();
             ideaGenerationData = _parseAiGeneratedIdeas(result.data);
             break;
@@ -139,8 +208,12 @@ const Dashboard = () => {
             response = await fetch('/api/run_analysis_step', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { companies_list: initialTickers } }),
+              body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { companies_list: initialTickers }, detail_level: step.detailLevel }),
             });
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(errorText || 'Categorization triage step failed');
+            }
             result = await response.json();
             categorizationTriageData = result.data;
             const { "Fast Grower": fastGrowers, "Turnaround": turnarounds } = _parseCategorizationTable(categorizationTriageData);
@@ -153,26 +226,16 @@ const Dashboard = () => {
               response = await fetch('/api/run_analysis_step', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { fast_growers_data: vettedFastGrowersData } }),
+                body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { fast_growers_data: vettedFastGrowersData }, detail_level: step.detailLevel }),
               });
-              result = await response.json();
-              let parsedVettingResult;
-              if (result.data.format === 'json') {
-                parsedVettingResult = result.data.content;
-              } else if (result.data.format === 'text') {
-                try {
-                  const jsonString = _extractJsonFromMarkdown(result.data.content);
-                  if (!jsonString.trim()) {
-                    console.warn("Extracted JSON string for fast growers vetting is empty.");
-                    parsedVettingResult = [];
-                  } else {
-                    parsedVettingResult = JSON.parse(jsonString);
-                  }
-                } catch (e) {
-                  console.error("Error parsing fast growers vetting data from text:", e);
-                  parsedVettingResult = [];
-                }
+              if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Vetting fast growers step failed');
               }
+              result = await response.json();
+              let parsedVettingResult = result.data.format === 'json'
+                ? result.data.content
+                : _parseAndCleanJson(result.data.content) || [];
               vettedFastGrowersData = vettedFastGrowersData.map(stock => {
                 const vettingResultForStock = parsedVettingResult.find(res => res.ticker === stock.ticker);
                 return { ...stock, ...vettingResultForStock };
@@ -185,26 +248,16 @@ const Dashboard = () => {
               response = await fetch('/api/run_analysis_step', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { turnarounds_data: vettedTurnaroundsData } }),
+                body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { turnarounds_data: vettedTurnaroundsData }, detail_level: step.detailLevel }),
               });
-              result = await response.json();
-              let parsedVettingResult;
-              if (result.data.format === 'json') {
-                parsedVettingResult = result.data.content;
-              } else if (result.data.format === 'text') {
-                try {
-                  const jsonString = _extractJsonFromMarkdown(result.data.content);
-                  if (!jsonString.trim()) {
-                    console.warn("Extracted JSON string for turnarounds vetting is empty.");
-                    parsedVettingResult = [];
-                  } else {
-                    parsedVettingResult = JSON.parse(jsonString);
-                  }
-                } catch (e) {
-                  console.error("Error parsing turnarounds vetting data from text:", e);
-                  parsedVettingResult = [];
-                }
+              if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Vetting turnarounds step failed');
               }
+              result = await response.json();
+              let parsedVettingResult = result.data.format === 'json'
+                ? result.data.content
+                : _parseAndCleanJson(result.data.content) || [];
               vettedTurnaroundsData = vettedTurnaroundsData.map(stock => {
                 const vettingResultForStock = parsedVettingResult.find(res => res.ticker === stock.ticker);
                 return { ...stock, ...vettingResultForStock };
@@ -218,25 +271,16 @@ const Dashboard = () => {
               response = await fetch('/api/run_analysis_step', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { stocks_list: allVettedTickers } }),
+                body: JSON.stringify({ step: step.id, use_cache: step.useCache, payload: { stocks_list: allVettedTickers }, detail_level: step.detailLevel }),
               });
-              result = await response.json();
-              if (result.data.format === 'json') {
-                sentimentAnalysisData = result.data.content;
-              } else if (result.data.format === 'text') {
-                try {
-                  const jsonString = _extractJsonFromMarkdown(result.data.content);
-                  if (!jsonString.trim()) {
-                    console.warn("Extracted JSON string for sentiment analysis is empty.");
-                    sentimentAnalysisData = [];
-                  } else {
-                    sentimentAnalysisData = JSON.parse(jsonString);
-                  }
-                } catch (e) {
-                  console.error("Error parsing sentiment analysis data from text:", e);
-                  sentimentAnalysisData = [];
-                }
+              if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Sentiment analysis step failed');
               }
+              result = await response.json();
+              sentimentAnalysisData = result.data.format === 'json'
+                ? result.data.content
+                : _parseAndCleanJson(result.data.content) || [];
             }
             break;
 
@@ -252,26 +296,17 @@ const Dashboard = () => {
                   turnarounds_vetted: vettedTurnaroundsData,
                   sentiment_analysis_results: { content: JSON.stringify(sentimentAnalysisData) },
                 },
+                detail_level: step.detailLevel,
               }),
             });
-            result = await response.json();
-            let finalSelectionParsedData;
-            if (result.data.format === 'json') {
-              finalSelectionParsedData = result.data.content;
-            } else if (result.data.format === 'text') {
-              try {
-                const jsonString = _extractJsonFromMarkdown(result.data.content);
-                if (!jsonString.trim()) {
-                  console.warn("Extracted JSON string for final selection is empty.");
-                  finalSelectionParsedData = [];
-                } else {
-                  finalSelectionParsedData = JSON.parse(jsonString);
-                }
-              } catch (e) {
-                console.error("Error parsing final selection data from text:", e);
-                finalSelectionParsedData = [];
-              }
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(errorText || 'Final selection synthesis step failed');
             }
+            result = await response.json();
+            let finalSelectionParsedData = result.data.format === 'json'
+                ? result.data.content
+                : _parseAndCleanJson(result.data.content) || [];
             setFinalStocks(finalSelectionParsedData);
             break;
 
@@ -365,18 +400,20 @@ const Dashboard = () => {
 
       // First, extract JSON from markdown if format is text
       if (result.data.format === 'text') {
-        try {
-          const jsonString = _extractJsonFromMarkdown(result.data.content);
-          if (jsonString.trim()) {
-            displayData = JSON.parse(jsonString); // Correctly reassign parsed data
-          } else {
-            console.warn(`Extracted JSON string for ${step.name} is empty.`);
-            displayData = []; // Default to empty array if no valid JSON
+        const jsonMatch = result.data.content.match(/```json\s*(\[[\s\S]*?\])\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          try {
+            displayData = JSON.parse(jsonMatch[1]);
+          } catch (e) {
+            console.error(`Error parsing AI data from text for ${step.name}:`, e);
+            displayData = []; // Default to empty array on parse error
           }
-        } catch (e) {
-          console.error(`Error parsing AI data from text for ${step.name}:`, e);
-          displayData = []; // Default to empty array on parse error
+        } else {
+          console.warn(`Extracted JSON string for ${step.name} is empty or null.`);
+          displayData = []; // Default to empty array if no valid JSON
         }
+      } else {
+        displayData = result.data.content;
       }
 
       // Then, transform data if it's an object (e.g., from vetting or sentiment analysis steps)
@@ -433,7 +470,32 @@ const Dashboard = () => {
   };
 
   if (selectedStock) {
-    return <StockDetail stock={selectedStock} onBack={handleBack} />;
+    const currentIndex = finalStocks.findIndex(s => s.ticker === selectedStock.ticker);
+    const hasPrev = currentIndex > 0;
+    const hasNext = currentIndex < finalStocks.length - 1;
+
+    const handlePrev = () => {
+      if (hasPrev) {
+        handleStockClick(finalStocks[currentIndex - 1]);
+      }
+    };
+
+    const handleNext = () => {
+      if (hasNext) {
+        handleStockClick(finalStocks[currentIndex + 1]);
+      }
+    };
+
+    return (
+      <StockDetail
+        stock={selectedStock}
+        onBack={handleBack}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        hasPrev={hasPrev}
+        hasNext={hasNext}
+      />
+    );
   }
 
   return (
@@ -487,6 +549,7 @@ const Dashboard = () => {
               onToggleCache={handleToggleCache}
               onViewData={handleViewData}
               isClickable={!analysisInProgress}
+              onDetailLevelChange={handleDetailLevelChange}
             />
           ))}
         </Box>
@@ -542,4 +605,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
 
